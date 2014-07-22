@@ -7,7 +7,6 @@ class RoutesMixin(object):
     """
 
     rule_map = None
-    events = None
 
     def __init__(self):
         self.rule_map = dict()
