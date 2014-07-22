@@ -11,6 +11,7 @@ from .connection import Connection
 from .worker import Worker
 from .callbacks_mixin import RoutesMixin
 from .request import Request
+from . import autoreload
 
 
 class Melon(RoutesMixin):
@@ -21,6 +22,7 @@ class Melon(RoutesMixin):
 
     server = None
     blueprints = None
+    debug = False
 
     def __init__(self, box_class, conn_class=None, request_class=None):
         super(Melon, self).__init__()
@@ -38,30 +40,42 @@ class Melon(RoutesMixin):
     def register_blueprint(self, blueprint):
         blueprint.register2app(self)
 
-    def run(self, host, port, workers=1):
+    def run(self, host, port, debug=None, use_reloader=None, workers=1):
+        if debug is not None:
+            self.debug = debug
+        use_reloader = use_reloader if use_reloader is not None else self.debug
 
-        class MelonServer(TCPServer):
-            def handle_stream(sub_self, stream, address):
-                conn = Connection(self, self.box_class, stream, address)
-                self.conn_dict[id(conn)] = conn
-                conn.handle()
+        def run_wrapper():
+            logger.info('Running server on %s:%s, debug: %s, use_reloader: %s',
+                        host, port, self.debug, use_reloader)
 
-        self.server = MelonServer()
-        self.server.listen(port, host)
+            class MelonServer(TCPServer):
+                def handle_stream(sub_self, stream, address):
+                    conn = Connection(self, self.box_class, stream, address)
+                    self.conn_dict[id(conn)] = conn
+                    conn.handle()
 
-        # 启动获取数据数据的线程
-        thread = Thread(target=self.poll_input_queue)
-        thread.daemon = True
-        thread.start()
+            self.server = MelonServer()
+            self.server.listen(port, host)
 
-        if workers:
-            for it in xrange(0, workers):
-                p = Process(target=Worker(self, self.box_class, self.request_class).run,
-                            args=(self.output_queue, self.input_queue))
-                p._daemonic = True
-                p.start()
+            # 启动获取数据数据的线程
+            thread = Thread(target=self.poll_input_queue)
+            thread.daemon = True
+            thread.start()
 
-        IOLoop.instance().start()
+            if workers:
+                for it in xrange(0, workers):
+                    p = Process(target=Worker(self, self.box_class, self.request_class).run,
+                                args=(self.output_queue, self.input_queue))
+                    p._daemonic = True
+                    p.start()
+
+            IOLoop.instance().start()
+
+        if use_reloader:
+            autoreload.main(run_wrapper)
+        else:
+            run_wrapper()
 
     def poll_input_queue(self):
         """

@@ -76,11 +76,9 @@ class Connection(object):
         """
         数据获取结束
         """
-        logger.debug('raw_data: %s', raw_data)
+        #logger.debug('raw_data: %s', raw_data)
         # 数据写入
         try:
-            #self.app.output_queue.put(struct.pack('i' + str(len(raw_data)) + 's', id(self), raw_data))
-            #self.app.output_queue.put((id(self), raw_data))
             self.app.output_queue.put(dict(
                 conn_id=id(self),
                 address=self.address,
