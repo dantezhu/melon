@@ -16,7 +16,13 @@ class Worker(object):
 
     def run(self):
         while True:
-            msg = self.child_input.get()
+            try:
+                msg = self.child_input.get()
+            except KeyboardInterrupt:
+                break
+            except:
+                logger.error('exc occur.', exc_info=True)
+                break
 
             try:
                 request = self.request_class(self, self.box_class, msg)

@@ -69,7 +69,12 @@ class Melon(RoutesMixin):
                     p._daemonic = True
                     p.start()
 
-            IOLoop.instance().start()
+            try:
+                IOLoop.instance().start()
+            except KeyboardInterrupt:
+                pass
+            except:
+                logger.error('exc occur.', exc_info=True)
 
         if use_reloader:
             autoreload.main(run_wrapper)
@@ -81,7 +86,14 @@ class Melon(RoutesMixin):
         从队列里面获取worker的返回
         """
         while True:
-            msg = self.parent_input.get()
+            try:
+                msg = self.parent_input.get()
+            except KeyboardInterrupt:
+                break
+            except:
+                logger.error('exc occur.', exc_info=True)
+                break
+
             conn = self.conn_dict.get(msg.get('conn_id'))
             if conn:
                 try:
