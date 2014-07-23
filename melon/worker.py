@@ -19,7 +19,7 @@ class Worker(object):
         self.child_output = child_output
 
         while True:
-            msg = child_input.get()
+            msg = self.child_input.get()
 
             request = self.request_class(self, self.box_class, msg)
             self._handle_request(request)
