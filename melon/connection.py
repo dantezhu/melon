@@ -84,6 +84,8 @@ class Connection(object):
                 address=self.address,
                 data=raw_data,
             ))
+        except:
+            logger.error('exc occur.', exc_info=True)
         finally:
             # 不管怎么样也得继续读
             self._read_message()
