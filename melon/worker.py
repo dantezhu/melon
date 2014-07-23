@@ -6,20 +6,20 @@ from .log import logger
 
 class Worker(object):
 
-    input_queue = None
-    output_queue = None
+    child_input = None
+    child_output = None
 
     def __init__(self, app, box_class, request_class):
         self.app = app
         self.box_class = box_class
         self.request_class = request_class
 
-    def run(self, input_queue, output_queue):
-        self.input_queue = input_queue
-        self.output_queue = output_queue
+    def run(self, child_input, child_output):
+        self.child_input = child_input
+        self.child_output = child_output
 
         while True:
-            msg = input_queue.get()
+            msg = child_input.get()
 
             request = self.request_class(self, self.box_class, msg)
             self._handle_request(request)

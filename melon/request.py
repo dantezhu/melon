@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 from .log import logger
 
 
@@ -72,9 +73,10 @@ class Request(object):
         if isinstance(data, self.box_class):
             data = data.pack()
 
-        return self.worker.output_queue.put(dict(
+        return self.worker.child_output.put(dict(
             conn_id=self.msg.get('conn_id'),
             data=data,
+            pid=os.getpid(),
         ))
 
     def close(self, exc_info=False):

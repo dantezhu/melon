@@ -16,8 +16,8 @@ from . import autoreload
 
 class Melon(RoutesMixin):
 
-    input_queue = None
-    output_queue = None
+    parent_input = None
+    parent_output = None
     conn_dict = None
 
     server = None
@@ -30,8 +30,8 @@ class Melon(RoutesMixin):
         self.conn_class = conn_class or Connection
 
         self.blueprints = list()
-        self.input_queue = Queue()
-        self.output_queue = Queue()
+        self.parent_input = Queue()
+        self.parent_output = Queue()
         self.conn_dict = weakref.WeakValueDictionary()
         self.request_class = request_class or Request
 
@@ -59,14 +59,14 @@ class Melon(RoutesMixin):
             self.server.listen(port, host)
 
             # 启动获取数据数据的线程
-            thread = Thread(target=self.poll_input_queue)
+            thread = Thread(target=self.poll_worker_input)
             thread.daemon = True
             thread.start()
 
             if workers:
                 for it in xrange(0, workers):
                     p = Process(target=Worker(self, self.box_class, self.request_class).run,
-                                args=(self.output_queue, self.input_queue))
+                                args=(self.parent_output, self.parent_input))
                     p._daemonic = True
                     p.start()
 
@@ -77,12 +77,12 @@ class Melon(RoutesMixin):
         else:
             run_wrapper()
 
-    def poll_input_queue(self):
+    def poll_worker_input(self):
         """
         从队列里面获取worker的返回
         """
         while True:
-            msg = self.input_queue.get()
+            msg = self.parent_input.get()
             conn = self.conn_dict.get(msg.get('conn_id'))
             if conn:
                 if msg.get('data'):

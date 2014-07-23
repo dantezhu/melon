@@ -79,7 +79,7 @@ class Connection(object):
         #logger.debug('raw_data: %s', raw_data)
         # 数据写入
         try:
-            self.app.output_queue.put(dict(
+            self.app.parent_output.put(dict(
                 conn_id=id(self),
                 address=self.address,
                 data=raw_data,
