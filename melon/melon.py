@@ -59,7 +59,7 @@ class Melon(RoutesMixin):
             self.server.listen(port, host)
 
             # 启动获取worker数据的线程
-            thread = Thread(target=self.poll_worker_result)
+            thread = Thread(target=self._poll_worker_result)
             thread.daemon = True
             thread.start()
 
@@ -81,7 +81,7 @@ class Melon(RoutesMixin):
         else:
             run_wrapper()
 
-    def poll_worker_result(self):
+    def _poll_worker_result(self):
         """
         从队列里面获取worker的返回
         """
