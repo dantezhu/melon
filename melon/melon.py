@@ -58,15 +58,14 @@ class Melon(RoutesMixin):
             self.server = MelonServer()
             self.server.listen(port, host)
 
-            # 启动获取数据数据的线程
-            thread = Thread(target=self.poll_worker_input)
+            # 启动获取worker数据的线程
+            thread = Thread(target=self.poll_worker_result)
             thread.daemon = True
             thread.start()
 
             if workers:
                 for it in xrange(0, workers):
-                    p = Process(target=Worker(self, self.box_class, self.request_class).run,
-                                args=(self.parent_output, self.parent_input))
+                    p = Process(target=Worker(self, self.box_class, self.request_class).run)
                     p._daemonic = True
                     p.start()
 
@@ -77,7 +76,7 @@ class Melon(RoutesMixin):
         else:
             run_wrapper()
 
-    def poll_worker_input(self):
+    def poll_worker_result(self):
         """
         从队列里面获取worker的返回
         """
@@ -85,11 +84,14 @@ class Melon(RoutesMixin):
             msg = self.parent_input.get()
             conn = self.conn_dict.get(msg.get('conn_id'))
             if conn:
-                if msg.get('data'):
-                    conn.write(msg.get('data'))
-                else:
-                    # data 为NULL代表关闭链接的意思
-                    conn.finish()
+                try:
+                    if msg.get('data'):
+                        conn.write(msg.get('data'))
+                    else:
+                        # data 为NULL代表关闭链接的意思
+                        conn.finish()
+                except:
+                    logger.error('exc occur. msg: %r', msg, exc_info=True)
 
     def _configure_exc_handler(self):
         """

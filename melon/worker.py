@@ -14,15 +14,23 @@ class Worker(object):
         self.box_class = box_class
         self.request_class = request_class
 
-    def run(self, child_input, child_output):
-        self.child_input = child_input
-        self.child_output = child_output
-
+    def run(self):
         while True:
             msg = self.child_input.get()
 
-            request = self.request_class(self, self.box_class, msg)
-            self._handle_request(request)
+            try:
+                request = self.request_class(self, self.box_class, msg)
+                self._handle_request(request)
+            except:
+                logger.error('exc occur. msg: %r', msg, exc_info=True)
+
+    @property
+    def child_input(self):
+        return self.app.parent_output
+
+    @property
+    def child_output(self):
+        return self.app.parent_input
 
     def _handle_request(self, request):
         """
