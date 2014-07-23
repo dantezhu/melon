@@ -14,6 +14,9 @@ class Request(object):
     msg = None
     box = None
     is_valid = False
+    blueprint = None
+    blueprint_name = None
+    blueprint_cmd = None
 
     def __init__(self, worker, box_class, msg):
         self.worker = worker
@@ -29,6 +32,7 @@ class Request(object):
             return False
 
         if self.box.unpack(self.msg.get('data')) > 0:
+            self._parse_blueprint_info()
             return True
         else:
             logger.error('unpack fail. request: %s', self)
@@ -37,22 +41,6 @@ class Request(object):
     @property
     def app(self):
         return self.worker.app
-
-    @property
-    def blueprint(self):
-        cmd_parts = str(self.cmd or '').split('.')
-        bp_name, cmd = cmd_parts if len(cmd_parts) == 2 else (None, self.cmd)
-
-        for bp in self.app.blueprints:
-            if bp_name == bp.name and bp.get_route_view_func(cmd):
-                return bp
-
-        return None
-
-    @property
-    def blueprint_cmd(self):
-        cmd_parts = str(self.cmd or '').split('.')
-        return cmd_parts[1] if len(cmd_parts) == 2 else self.cmd
 
     @property
     def address(self):
@@ -86,6 +74,15 @@ class Request(object):
         :return:
         """
         self.write(None)
+
+    def _parse_blueprint_info(self):
+        cmd_parts = str(self.cmd or '').split('.')
+        self.blueprint_name, self.blueprint_cmd = cmd_parts if len(cmd_parts) == 2 else (None, self.cmd)
+
+        for bp in self.app.blueprints:
+            if self.blueprint_name == bp.name and bp.get_route_view_func(self.blueprint_cmd):
+                self.blueprint = bp
+                break
 
     def __repr__(self):
         return repr(self.msg)
