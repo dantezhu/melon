@@ -40,7 +40,6 @@ class Stream(IOStream):
                     loc = self._read_checker(self._read_buffer[0])
                     if loc > 0:
                         # 说明就是要这些长度
-                        self._read_checker = None
                         return loc
                     elif loc < 0:
                         # 说明接受的数据已经有问题了，直接把数据删掉，并退出
