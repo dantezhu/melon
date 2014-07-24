@@ -70,11 +70,16 @@ class Request(object):
         if isinstance(data, self.box_class):
             data = data.pack()
 
-        return self.worker.child_output.put(dict(
-            conn_id=self.msg.get('conn_id'),
-            data=data,
-            pid=os.getpid(),
-        ))
+        try:
+            self.worker.child_output.put_nowait(dict(
+                conn_id=self.msg.get('conn_id'),
+                data=data,
+                pid=os.getpid(),
+            ))
+            return True
+        except:
+            logger.error('exc occur.', exc_info=True)
+            return False
 
     def close(self, exc_info=False):
         """

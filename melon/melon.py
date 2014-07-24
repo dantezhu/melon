@@ -24,14 +24,15 @@ class Melon(RoutesMixin):
     blueprints = None
     debug = False
 
-    def __init__(self, box_class, conn_class=None, request_class=None):
+    def __init__(self, box_class, conn_class=None, request_class=None,
+                 input_queue_maxsize=None, output_queue_maxsize=None):
         super(Melon, self).__init__()
         self.box_class = box_class
         self.conn_class = conn_class or Connection
 
         self.blueprints = list()
-        self.parent_input = Queue()
-        self.parent_output = Queue()
+        self.parent_input = Queue(input_queue_maxsize)
+        self.parent_output = Queue(output_queue_maxsize)
         self.conn_dict = weakref.WeakValueDictionary()
         self.request_class = request_class or Request
 
