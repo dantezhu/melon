@@ -82,11 +82,7 @@ class Request(object):
             return False
 
     def close(self, exc_info=False):
-        """
-        :param exc_info:
-        :return:
-        """
-        self.write(None)
+        return self.write(None)
 
     def __repr__(self):
         return repr(self.msg)
