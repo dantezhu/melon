@@ -56,9 +56,6 @@ class Melon(RoutesMixin):
                     self.conn_dict[id(conn)] = conn
                     conn.handle()
 
-            self.server = MelonServer()
-            self.server.listen(port, host)
-
             # 启动获取worker数据的线程
             thread = Thread(target=self._poll_worker_result)
             thread.daemon = True
@@ -69,6 +66,9 @@ class Melon(RoutesMixin):
                     p = Process(target=Worker(self, self.box_class, self.request_class).run)
                     p._daemonic = True
                     p.start()
+
+            self.server = MelonServer()
+            self.server.listen(port, host)
 
             try:
                 IOLoop.instance().start()
