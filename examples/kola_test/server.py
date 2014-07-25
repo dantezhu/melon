@@ -2,13 +2,13 @@
 
 import logging
 from melon import Melon, logger
-from json_box import JsonBox
+from kola_box import KolaBox
 import user
 
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.DEBUG)
 
-app = Melon(JsonBox)
+app = Melon(KolaBox)
 app.register_blueprint(user.bp)
 
 @app.route()

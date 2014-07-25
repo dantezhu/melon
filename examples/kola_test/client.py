@@ -2,7 +2,7 @@
 
 
 import time
-from json_box import JsonBox
+from kola_box import KolaBox
 from netkit.stream import Stream
 
 import logging
@@ -18,7 +18,7 @@ s.connect(address)
 
 stream = Stream(s)
 
-box = JsonBox()
+box = KolaBox()
 box.set_json(dict(
     endpoint='user.login',
 ))
@@ -28,11 +28,11 @@ stream.write(box.pack())
 
 while True:
     # 阻塞
-    buf = stream.read_with_checker(JsonBox().check)
+    buf = stream.read_with_checker(KolaBox().check)
     print 'time:', time.time() - t1
 
     if buf:
-        box2 = JsonBox()
+        box2 = KolaBox()
         box2.unpack(buf)
         print box2
 
