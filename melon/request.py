@@ -83,7 +83,6 @@ class Request(object):
 
     def close(self, exc_info=False):
         """
-        还没做，也没想好怎么做
         :param exc_info:
         :return:
         """
