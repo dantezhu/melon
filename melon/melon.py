@@ -57,7 +57,7 @@ class Melon(RoutesMixin):
             reactor.listenTCP(port, self.conn_factory_class(self, self.box_class), interface=host)
 
             # 否则会报exceptions.ValueError: signal only works in main thread
-            installSignalHandlers = 0 if use_reloader else 1
+            installSignalHandlers = False if use_reloader else True
 
             try:
                 reactor.run(installSignalHandlers=installSignalHandlers)
