@@ -63,8 +63,11 @@ class Melon(RoutesMixin):
             endpoint = TCP4ServerEndpoint(reactor, port, interface=host)
             endpoint.listen(self.conn_factory_class(self, self.box_class))
 
+            # 否则会报exceptions.ValueError: signal only works in main thread
+            installSignalHandlers = 0 if autoreload else 1
+
             try:
-                reactor.run()
+                reactor.run(installSignalHandlers=installSignalHandlers)
             except KeyboardInterrupt:
                 pass
             except:
