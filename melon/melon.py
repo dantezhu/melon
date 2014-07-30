@@ -90,7 +90,7 @@ class Melon(RoutesMixin):
     def _fork_workers(self, workers):
         def make_worker_process():
             inner_p = Process(target=Worker(self, self.box_class, self.request_class).run)
-            inner_p._daemonic = True
+            inner_p.daemon = True
             return inner_p
 
         p_list = []
