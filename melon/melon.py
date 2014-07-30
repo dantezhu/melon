@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import time
 from multiprocessing import Queue, Process
 import weakref
 from threading import Thread
@@ -46,30 +47,24 @@ class Melon(RoutesMixin):
         use_reloader = use_reloader if use_reloader is not None else self.debug
 
         def run_wrapper():
+            assert workers >= 1
+
             logger.info('Running server on %s:%s, debug: %s, use_reloader: %s',
                         host, port, self.debug, use_reloader)
 
-            # 启动获取worker数据的线程
-            thread = Thread(target=self._poll_worker_result)
-            thread.daemon = True
-            thread.start()
-
-            if workers:
-                for it in xrange(0, workers):
-                    p = Process(target=Worker(self, self.box_class, self.request_class).run)
-                    p._daemonic = True
-                    p.start()
+            self._spawn_poll_worker_result_thread()
+            self._spawn_fork_workers(workers)
 
             endpoint = TCP4ServerEndpoint(reactor, port, interface=host)
             endpoint.listen(self.conn_factory_class(self, self.box_class))
 
             # 否则会报exceptions.ValueError: signal only works in main thread
-            installSignalHandlers = 0 if autoreload else 1
+            installSignalHandlers = 0 if use_reloader else 1
 
             try:
                 reactor.run(installSignalHandlers=installSignalHandlers)
             except KeyboardInterrupt:
-                pass
+                reactor.stop()
             except:
                 logger.error('exc occur.', exc_info=True)
 
@@ -77,6 +72,47 @@ class Melon(RoutesMixin):
             autoreload.main(run_wrapper)
         else:
             run_wrapper()
+
+    def _spawn_poll_worker_result_thread(self):
+        """
+        启动获取worker数据的线程
+        """
+        thread = Thread(target=self._poll_worker_result)
+        thread.daemon = True
+        thread.start()
+
+    def _spawn_fork_workers(self, workers):
+        """
+        通过线程启动多个worker
+        """
+        thread = Thread(target=self._fork_workers, args=(workers,))
+        thread.daemon = True
+        thread.start()
+
+    def _fork_workers(self, workers):
+        def make_worker_process():
+            inner_p = Process(target=Worker(self, self.box_class, self.request_class).run)
+            inner_p._daemonic = True
+            return inner_p
+
+        p_list = []
+
+        for it in xrange(0, workers):
+            p = make_worker_process()
+            p.start()
+            p_list.append(p)
+
+        while True:
+            for idx, p in enumerate(p_list):
+                if not p.is_alive():
+                    old_pid = p.pid
+                    p = make_worker_process()
+                    p.start()
+                    p_list[idx] = p
+
+                    logger.error('process[%s] dead. start new process[%s]', old_pid, p.pid)
+
+            time.sleep(1)
 
     def _poll_worker_result(self):
         """
