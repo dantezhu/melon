@@ -1,111 +1,68 @@
 # -*- coding: utf-8 -*-
 
+from twisted.internet.protocol import Protocol, Factory
+
 from .utils import safe_call
 from .log import logger
-from .stream import Stream
 
 
-class Connection(object):
-    def __init__(self, app, box_class, stream, address):
+class ConnectionFactory(Factory):
+
+    def __init__(self, app, box_class):
         self.app = app
         self.box_class = box_class
-        self.stream = Stream(socket=stream.socket,
-                             io_loop=stream.io_loop,
-                             max_buffer_size=stream.max_buffer_size,
-                             read_chunk_size=stream.read_chunk_size,
-                             max_write_buffer_size=stream.max_write_buffer_size,
-                             )
+
+    def buildProtocol(self, addr):
+        return Connection(self, (addr.host, addr.port))
+
+
+class Connection(Protocol):
+    _read_buffer = None
+
+    def __init__(self, factory, address):
+        self.factory = factory
         self.address = address
+        self._read_buffer = ''
+        # 放到弱引用映射里去
+        self.factory.app.conn_dict[id(self)] = self
 
-        self._clear_request_state()
-
-        self.stream.set_close_callback(self._on_connection_close)
-
-    def write(self, data, callback=None):
+    def dataReceived(self, data):
         """
-        发送数据(实现是放到发送队列)
+        当数据接受到时
+        :param data:
+        :return:
         """
-        if not self.stream.closed():
-            self._write_callback = callback
-            self.stream.write(data, self._on_write_complete)
+        self._read_buffer += data
+        box = self.factory.box_class()
 
-    def finish(self):
-        """Finishes the request."""
-        self._request_finished = True
-        # No more data is coming, so instruct TCP to send any remaining
-        # data immediately instead of waiting for a full packet or ack.
-        self.stream.set_nodelay(True)
-        if not self.stream.writing():
-            self.close()
+        while True:
+            ret = box.check(self._read_buffer)
+            if ret == 0:
+                # 说明要继续收
+                return
+            elif ret > 0:
+                # 收好了
+                box_data = self._read_buffer[:ret]
+                self._read_buffer = self._read_buffer[ret:]
+                safe_call(self.boxDataReceived, box_data)
+                continue
+            else:
+                # 数据已经混乱了，全部丢弃
+                logger.error('buffer invalid. ret: %d, read_buffer: %r', ret, self._read_buffer)
+                self._read_buffer = ''
+                return
 
-    def close(self, exc_info=False):
+    def boxDataReceived(self, data):
         """
-        直接关闭连接
-        注意: 不要在write完了之后直接调用，会导致write发送不出去(这个不太确定，tcp是全双工，理论上关闭了对方也会收到)
+        不需要解包成box，因为还要再发出去
+        :param data:
+        :return:
         """
-        self.stream.close(exc_info)
-        self._clear_request_state()
-
-    def set_close_callback(self, callback):
-        """Sets a callback that will be run when the connection is closed.
-        """
-        self._close_callback = callback
-
-    def handle(self):
-        """
-        启动执行
-        """
-        # 开始等待数据
-        self._read_message()
-
-    def _on_connection_close(self):
-        # 链接被关闭的回调
-        logger.debug('socket closed')
-
-        if self._close_callback is not None:
-            callback = self._close_callback
-            self._close_callback = None
-            safe_call(callback)
-
-    def _read_message(self):
-        if not self.stream.closed():
-            self.stream.read_with_checker(self.box_class().check, self._on_read_complete)
-            #self.stream.read_until('\n', self._on_read_complete)
-
-    def _on_read_complete(self, raw_data):
-        """
-        数据获取结束
-        """
-        #logger.debug('raw_data: %s', raw_data)
-        # 数据写入
         try:
-            self.app.parent_output.put_nowait(dict(
+            self.factory.app.parent_output.put_nowait(dict(
                 conn_id=id(self),
                 address=self.address,
-                data=raw_data,
+                data=data,
             ))
         except:
             logger.error('exc occur.', exc_info=True)
-        finally:
-            # 不管怎么样也得继续读
-            self._read_message()
-
-    def _on_write_complete(self):
-        if self._write_callback is not None:
-            callback = self._write_callback
-            self._write_callback = None
-            safe_call(callback)
-        if self._request_finished and not self.stream.writing():
-            self.close()
-
-    def _clear_request_state(self):
-        """Clears the per-request state.
-
-        This is run in between requests to allow the previous handler
-        to be garbage collected (and prevent spurious close callbacks),
-        and when the connection is closed (to break up cycles and
-        facilitate garbage collection in cpython).
-        """
-        self._request_finished = False
-        self._write_callback = None
-        self._close_callback = None

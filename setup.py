@@ -2,11 +2,11 @@ from setuptools import setup
 
 setup(
     name="melon",
-    version='1.0.20',
+    version='1.0.21',
     zip_safe=False,
     platforms='any',
     packages=['melon'],
-    install_requires=['tornado'],
+    install_requires=['twisted'],
     url="https://github.com/dantezhu/melon",
     license="MIT",
     author="dantezhu",
