@@ -103,4 +103,5 @@ class Melon(RoutesMixin):
             conn = self.conn_dict.get(msg.get('conn_id'))
             data = msg.get('data')
 
+            # 参考 http://twistedsphinx.funsize.net/projects/core/howto/threading.html
             reactor.callFromThread(handle_data, conn, data)
