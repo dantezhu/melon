@@ -44,7 +44,7 @@ class Connection(Protocol):
                 # 收好了
                 box_data = self._read_buffer[:ret]
                 self._read_buffer = self._read_buffer[ret:]
-                safe_call(self.boxDataReceived, box_data)
+                safe_call(self.fullDataReceived, box_data)
                 continue
             else:
                 # 数据已经混乱了，全部丢弃
@@ -52,8 +52,9 @@ class Connection(Protocol):
                 self._read_buffer = ''
                 return
 
-    def boxDataReceived(self, data):
+    def fullDataReceived(self, data):
         """
+        完整数据接收完成
         不需要解包成box，因为还要再发出去
         :param data:
         :return:
