@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="melon",
-    version='1.0.26',
+    version='1.0.27',
     zip_safe=False,
     platforms='any',
     packages=['melon'],
