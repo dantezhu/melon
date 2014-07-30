@@ -54,8 +54,6 @@ class Melon(RoutesMixin):
             self._spawn_poll_worker_result_thread()
             self._spawn_fork_workers(workers)
 
-            #endpoint = TCP4ServerEndpoint(reactor, port, interface=host)
-            #endpoint.listen()
             reactor.listenTCP(port, self.conn_factory_class(self, self.box_class), interface=host)
 
             # 否则会报exceptions.ValueError: signal only works in main thread
