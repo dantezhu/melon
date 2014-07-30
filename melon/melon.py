@@ -88,24 +88,23 @@ class Melon(RoutesMixin):
         thread.start()
 
     def _fork_workers(self, workers):
-        def make_worker_process():
+        def start_worker_process():
             inner_p = Process(target=Worker(self, self.box_class, self.request_class).run)
             inner_p.daemon = True
+            inner_p.start()
             return inner_p
 
         p_list = []
 
         for it in xrange(0, workers):
-            p = make_worker_process()
-            p.start()
+            p = start_worker_process()
             p_list.append(p)
 
         while True:
             for idx, p in enumerate(p_list):
                 if not p.is_alive():
                     old_pid = p.pid
-                    p = make_worker_process()
-                    p.start()
+                    p = start_worker_process()
                     p_list[idx] = p
 
                     logger.error('process[%s] dead. start new process[%s]', old_pid, p.pid)
