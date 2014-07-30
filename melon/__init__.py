@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '1.0.22'
+__version__ = '1.0.25'
 
 from .melon import Melon
 from .blueprint import Blueprint
