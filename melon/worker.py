@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import signal
 from . import constants
 from .log import logger
 
@@ -15,6 +16,8 @@ class Worker(object):
         self.request_class = request_class
 
     def run(self):
+        self._reset_signal_handler()
+
         while True:
             try:
                 msg = self.child_input.get()
@@ -66,3 +69,10 @@ class Worker(object):
 
         return view_func_result
 
+    def _reset_signal_handler(self):
+        """
+        因为主进程的reactor可能会重新处理signal，所以要保证子进程正常退出而不会被重启
+        :return:
+        """
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
