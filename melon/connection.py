@@ -35,7 +35,7 @@ class Connection(Protocol):
         self._read_buffer += data
         box = self.factory.box_class()
 
-        while True:
+        while self._read_buffer:
             ret = box.check(self._read_buffer)
             if ret == 0:
                 # 说明要继续收
