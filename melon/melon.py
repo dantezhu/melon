@@ -79,6 +79,18 @@ class Melon(RoutesMixin):
         """
         从队列里面获取worker的返回
         """
+
+        def handle_data(_conn, _data):
+            if _conn and _conn.transport:
+                try:
+                    if _data:
+                        _conn.transport.write(_data)
+                    else:
+                        # data 为NULL代表关闭链接的意思
+                        _conn.transport.loseConnection()
+                except:
+                    logger.error('exc occur. msg: %r', msg, exc_info=True)
+
         while True:
             try:
                 msg = self.parent_input.get()
@@ -89,12 +101,6 @@ class Melon(RoutesMixin):
                 break
 
             conn = self.conn_dict.get(msg.get('conn_id'))
-            if conn and conn.transport:
-                try:
-                    if msg.get('data'):
-                        reactor.callFromThread(conn.transport.write, msg.get('data'))
-                    else:
-                        # data 为NULL代表关闭链接的意思
-                        reactor.callFromThread(conn.transport.loseConnection)
-                except:
-                    logger.error('exc occur. msg: %r', msg, exc_info=True)
+            data = msg.get('data')
+
+            reactor.callFromThread(handle_data, conn, data)
