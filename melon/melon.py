@@ -4,7 +4,6 @@ import time
 from multiprocessing import Queue, Process
 import weakref
 from threading import Thread
-from twisted.internet.endpoints import TCP4ServerEndpoint
 # linux 默认就是epoll
 from twisted.internet import reactor
 
@@ -55,8 +54,9 @@ class Melon(RoutesMixin):
             self._spawn_poll_worker_result_thread()
             self._spawn_fork_workers(workers)
 
-            endpoint = TCP4ServerEndpoint(reactor, port, interface=host)
-            endpoint.listen(self.conn_factory_class(self, self.box_class))
+            #endpoint = TCP4ServerEndpoint(reactor, port, interface=host)
+            #endpoint.listen()
+            reactor.listenTCP(port, self.conn_factory_class(self, self.box_class), interface=host)
 
             # 否则会报exceptions.ValueError: signal only works in main thread
             installSignalHandlers = 0 if use_reloader else 1
@@ -64,7 +64,7 @@ class Melon(RoutesMixin):
             try:
                 reactor.run(installSignalHandlers=installSignalHandlers)
             except KeyboardInterrupt:
-                reactor.stop()
+                pass
             except:
                 logger.error('exc occur.', exc_info=True)
 
