@@ -59,11 +59,12 @@ class Connection(Protocol):
         :param data:
         :return:
         """
+        msg = dict(
+            conn_id=id(self),
+            address=self.address,
+            data=data,
+        )
         try:
-            self.factory.app.parent_output.put_nowait(dict(
-                conn_id=id(self),
-                address=self.address,
-                data=data,
-            ))
+            self.factory.app.parent_output.put_nowait(msg)
         except:
-            logger.error('exc occur.', exc_info=True)
+            logger.error('exc occur. msg: %r', msg, exc_info=True)
