@@ -25,11 +25,11 @@ class Melon(RoutesMixin):
     blueprints = None
     debug = False
 
-    def __init__(self, box_class, conn_factory_class=None, request_class=None,
+    def __init__(self, box_class, connection_factory_class=None, request_class=None,
                  input_queue_maxsize=None, output_queue_maxsize=None):
         super(Melon, self).__init__()
         self.box_class = box_class
-        self.conn_factory_class = conn_factory_class or ConnectionFactory
+        self.connection_factory_class = connection_factory_class or ConnectionFactory
 
         self.blueprints = list()
         self.parent_input = Queue(input_queue_maxsize)
@@ -55,7 +55,7 @@ class Melon(RoutesMixin):
             self._spawn_poll_worker_result_thread()
             self._spawn_fork_workers(workers)
 
-            reactor.listenTCP(port, self.conn_factory_class(self, self.box_class), interface=host)
+            reactor.listenTCP(port, self.connection_factory_class(self, self.box_class), interface=host)
 
             try:
                 reactor.run(installSignalHandlers=handle_signals)
