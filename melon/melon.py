@@ -40,10 +40,11 @@ class Melon(RoutesMixin):
     def register_blueprint(self, blueprint):
         blueprint.register2app(self)
 
-    def run(self, host, port, debug=None, use_reloader=None, workers=1):
+    def run(self, host, port, debug=None, use_reloader=None, workers=1, handle_signals=None):
         if debug is not None:
             self.debug = debug
         use_reloader = use_reloader if use_reloader is not None else self.debug
+        handle_signals = handle_signals if handle_signals is not None else not use_reloader
 
         def run_wrapper():
             assert workers >= 1
@@ -56,11 +57,8 @@ class Melon(RoutesMixin):
 
             reactor.listenTCP(port, self.conn_factory_class(self, self.box_class), interface=host)
 
-            # 否则会报exceptions.ValueError: signal only works in main thread
-            installSignalHandlers = not use_reloader
-
             try:
-                reactor.run(installSignalHandlers=installSignalHandlers)
+                reactor.run(installSignalHandlers=handle_signals)
             except KeyboardInterrupt:
                 pass
             except:
