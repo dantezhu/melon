@@ -28,10 +28,10 @@ class Request(object):
         try:
             self.box = self.box_class()
         except Exception, e:
-            logger.error('parse raw_data fail. e: %s, request: %s', e, self)
+            logger.error('create box fail. e: %s, request: %s', e, self)
             return False
 
-        if self.box.unpack(self.msg.get('data')) > 0:
+        if self.box.unpack(self.msg.get('data') or '') > 0:
             self._parse_blueprint_info()
             return True
         else:
