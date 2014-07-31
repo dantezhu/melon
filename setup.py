@@ -1,11 +1,11 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name="melon",
     version='1.0.36',
     zip_safe=False,
     platforms='any',
-    packages=['melon'],
+    packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
     install_requires=['twisted'],
     url="https://github.com/dantezhu/melon",
     license="MIT",
