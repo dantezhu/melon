@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from melon import Blueprint
+from reimp import Blueprint
 
-bp = Blueprint('user')
+bp = Blueprint()
 
 
-@bp.route()
+@bp.route(101)
 def login(request):
     request.write(dict(ret=11))
