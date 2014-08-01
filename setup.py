@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="melon",
-    version='1.0.39',
+    version='1.0.50',
     zip_safe=False,
     platforms='any',
     packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
@@ -11,5 +11,5 @@ setup(
     license="MIT",
     author="dantezhu",
     author_email="zny2008@gmail.com",
-    description="tornado with multiprocessing worker",
+    description="twisted with multiprocessing worker",
 )
