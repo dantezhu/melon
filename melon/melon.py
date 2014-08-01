@@ -113,21 +113,6 @@ class Melon(RoutesMixin):
         """
         从队列里面获取worker的返回
         """
-
-        def handle_worker_response(msg):
-            conn = self.conn_dict.get(msg.get('conn_id'))
-            data = msg.get('data')
-
-            if conn and conn.transport:
-                try:
-                    if data:
-                        conn.transport.write(data)
-                    else:
-                        # data 为NULL代表关闭链接的意思
-                        conn.transport.loseConnection()
-                except:
-                    logger.error('exc occur. msg: %r', msg, exc_info=True)
-
         while True:
             try:
                 msg = self.parent_input.get()
@@ -138,4 +123,18 @@ class Melon(RoutesMixin):
                 break
 
             # 参考 http://twistedsphinx.funsize.net/projects/core/howto/threading.html
-            reactor.callFromThread(handle_worker_response, msg)
+            reactor.callFromThread(self._handle_worker_response, msg)
+
+    def _handle_worker_response(self, msg):
+        conn = self.conn_dict.get(msg.get('conn_id'))
+        data = msg.get('data')
+
+        if conn and conn.transport:
+            try:
+                if data:
+                    conn.transport.write(data)
+                else:
+                    # data 为NULL代表关闭链接的意思
+                    conn.transport.loseConnection()
+            except:
+                logger.error('exc occur. msg: %r', msg, exc_info=True)
