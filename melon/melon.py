@@ -105,7 +105,7 @@ class Melon(RoutesMixin):
                     p = start_worker_process()
                     p_list[idx] = p
 
-                    logger.error('process[%s] dead. start new process[%s]', old_pid, p.pid)
+                    logger.error('process[%s] is dead. start new process[%s].', old_pid, p.pid)
 
             time.sleep(1)
 
