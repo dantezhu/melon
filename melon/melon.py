@@ -40,7 +40,11 @@ class Melon(RoutesMixin):
     def register_blueprint(self, blueprint):
         blueprint.register2app(self)
 
-    def run(self, host, port, debug=None, use_reloader=None, workers=1, handle_signals=None):
+    def run(self, host=None, port=None, debug=None, use_reloader=None, workers=1, handle_signals=None):
+        if host is None:
+            host = '127.0.0.1'
+        if port is None:
+            port = 7777
         if debug is not None:
             self.debug = debug
         use_reloader = use_reloader if use_reloader is not None else self.debug

@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="melon",
-    version='1.0.55',
+    version='1.0.56',
     zip_safe=False,
     platforms='any',
     packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
