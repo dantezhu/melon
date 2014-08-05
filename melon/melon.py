@@ -6,6 +6,7 @@ import weakref
 from threading import Thread
 # linux 默认就是epoll
 from twisted.internet import reactor
+import signal
 
 from .log import logger
 from .connection import ConnectionFactory
@@ -58,11 +59,13 @@ class Melon(RoutesMixin):
 
             self._spawn_poll_worker_result_thread()
             self._spawn_fork_workers(workers)
+            if handle_signals:
+                self._handle_parent_proc_signals()
 
             reactor.listenTCP(port, self.connection_factory_class(self, self.box_class), interface=host)
 
             try:
-                reactor.run(installSignalHandlers=handle_signals)
+                reactor.run(installSignalHandlers=False)
             except KeyboardInterrupt:
                 pass
             except:
@@ -111,7 +114,13 @@ class Melon(RoutesMixin):
 
                     logger.error('process[%s] is dead. start new process[%s].', old_pid, p.pid)
 
-            time.sleep(1)
+            try:
+                time.sleep(1)
+            except KeyboardInterrupt:
+                break
+            except:
+                logger.error('exc occur.', exc_info=True)
+                break
 
     def _poll_worker_result(self):
         """
@@ -142,3 +151,16 @@ class Melon(RoutesMixin):
                     conn.transport.loseConnection()
             except:
                 logger.error('exc occur. msg: %r', msg, exc_info=True)
+
+    def _handle_parent_proc_signals(self):
+        def custom_signal_handler(signum, frame):
+            """
+            在centos6下，callFromThread(stop)无效，因为处理不够及时
+            """
+            try:
+                reactor.stop()
+            except:
+                pass
+
+        signal.signal(signal.SIGTERM, custom_signal_handler)
+        signal.signal(signal.SIGINT, custom_signal_handler)
