@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-#from netkit.box import Box as Box
-from kola_box import KolaBox as Box
+from netkit.box import Box as Box
 
 import logging
 from melon import logger, Melon, Blueprint
