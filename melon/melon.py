@@ -14,6 +14,7 @@ from .worker import Worker
 from .callbacks_mixin import RoutesMixin
 from .request import Request
 from . import autoreload
+from . import constants
 
 
 class Melon(RoutesMixin):
@@ -43,9 +44,9 @@ class Melon(RoutesMixin):
 
     def run(self, host=None, port=None, debug=None, use_reloader=None, workers=1, handle_signals=None):
         if host is None:
-            host = '127.0.0.1'
+            host = constants.SERVER_HOST
         if port is None:
-            port = 7777
+            port = constants.SERVER_PORT
         if debug is not None:
             self.debug = debug
         use_reloader = use_reloader if use_reloader is not None else self.debug
