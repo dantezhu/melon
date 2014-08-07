@@ -19,13 +19,15 @@ from . import constants
 
 class Melon(RoutesMixin):
 
+    debug = False
+    backlog = constants.SERVER_BACKLOG
+
     parent_input = None
     parent_output = None
     conn_dict = None
 
     server = None
     blueprints = None
-    debug = False
 
     def __init__(self, box_class, connection_factory_class=None, request_class=None,
                  input_queue_maxsize=None, output_queue_maxsize=None):
@@ -63,7 +65,8 @@ class Melon(RoutesMixin):
             if handle_signals:
                 self._handle_parent_proc_signals()
 
-            reactor.listenTCP(port, self.connection_factory_class(self, self.box_class), interface=host)
+            reactor.listenTCP(port, self.connection_factory_class(self, self.box_class),
+                              backlog=self.backlog, interface=host)
 
             try:
                 reactor.run(installSignalHandlers=False)
