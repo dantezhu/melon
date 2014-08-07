@@ -33,7 +33,7 @@ class Connection(Protocol):
         :return:
         """
         self._read_buffer += data
-        box = self.factory.box_class()
+        box = self.factory.box_class.instance()
 
         while self._read_buffer:
             ret = box.check(self._read_buffer)
