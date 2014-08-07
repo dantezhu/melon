@@ -18,7 +18,7 @@ class Worker(object):
     def run(self):
         self._handle_signals()
 
-        while True:
+        while 1:
             try:
                 msg = self.child_input.get()
             except KeyboardInterrupt:

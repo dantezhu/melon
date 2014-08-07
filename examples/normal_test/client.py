@@ -21,7 +21,7 @@ stream.write(box.pack())
 
 t1 = time.time()
 
-while True:
+while 1:
     # 阻塞
     buf = stream.read_with_checker(Box().check)
 

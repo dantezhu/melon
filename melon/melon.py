@@ -106,7 +106,7 @@ class Melon(RoutesMixin):
             p = start_worker_process()
             p_list.append(p)
 
-        while True:
+        while 1:
             for idx, p in enumerate(p_list):
                 if not p.is_alive():
                     old_pid = p.pid
@@ -127,7 +127,7 @@ class Melon(RoutesMixin):
         """
         从队列里面获取worker的返回
         """
-        while True:
+        while 1:
             try:
                 msg = self.parent_input.get()
             except KeyboardInterrupt:
