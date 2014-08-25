@@ -81,12 +81,8 @@ class Request(object):
             data=data,
             pid=os.getpid(),
         )
-        try:
-            self.worker.child_output.put_nowait(msg)
-            return True
-        except:
-            logger.error('exc occur. msg: %r', msg, exc_info=True)
-            return False
+
+        return self.worker.write(msg)
 
     def close(self, exc_info=False):
         return self.write(None)

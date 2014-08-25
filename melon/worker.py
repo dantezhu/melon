@@ -20,7 +20,7 @@ class Worker(object):
 
         while 1:
             try:
-                msg = self.child_input.get()
+                msg = self.read()
             except KeyboardInterrupt:
                 break
             except:
@@ -40,6 +40,26 @@ class Worker(object):
     @property
     def child_output(self):
         return self.app.parent_input
+
+    def read(self):
+        """
+        读取消息
+        :return:
+        """
+        return self.child_input.get()
+
+    def write(self, msg):
+        """
+        接收消息
+        :param msg:
+        :return:
+        """
+        try:
+            self.child_output.put_nowait(msg)
+            return True
+        except:
+            logger.error('exc occur. msg: %r', msg, exc_info=True)
+            return False
 
     def _handle_request(self, request):
         """
