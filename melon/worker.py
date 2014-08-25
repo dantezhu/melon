@@ -18,6 +18,10 @@ class Worker(object):
     def run(self):
         self._handle_signals()
 
+        self.app.events.create_worker()
+        for bp in self.app.blueprints:
+            bp.events.create_app_worker()
+
         while 1:
             try:
                 msg = self.read()
@@ -54,12 +58,23 @@ class Worker(object):
         :param msg:
         :return:
         """
+
+        self.app.events.before_response(msg)
+        for bp in self.app.blueprints:
+            bp.events.before_app_response(msg)
+
         try:
             self.child_output.put_nowait(msg)
-            return True
+            result = True
         except:
             logger.error('exc occur. msg: %r', msg, exc_info=True)
-            return False
+            result = False
+
+        for bp in self.app.blueprints:
+            bp.events.after_app_response(msg, result)
+        self.app.events.after_response(msg, result)
+
+        return result
 
     def _handle_request(self, request):
         """
@@ -78,6 +93,13 @@ class Worker(object):
             request.write(dict(ret=constants.RET_INVALID_CMD))
             return None
 
+        self.app.events.before_request(request)
+        for bp in self.app.blueprints:
+            bp.events.before_app_request(request)
+        if request.blueprint:
+            request.blueprint.events.before_request(request)
+
+        view_func_exc = None
         view_func_result = None
 
         try:
@@ -85,7 +107,14 @@ class Worker(object):
         except Exception, e:
             logger.error('view_func raise exception. request: %s, view_func: %s, e: %s',
                          request, view_func, e, exc_info=True)
+            view_func_exc = e
             request.write(dict(ret=constants.RET_INTERNAL))
+
+        if request.blueprint:
+            request.blueprint.events.after_request(request, view_func_exc or view_func_result)
+        for bp in self.app.blueprints:
+            bp.events.after_app_request(request, view_func_exc or view_func_result)
+        self.app.events.after_request(request, view_func_exc or view_func_result)
 
         return view_func_result
 
