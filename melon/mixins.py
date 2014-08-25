@@ -60,7 +60,7 @@ class AppEventsMixin(object):
     def create_worker(self, f):
         """
         创建worker
-        f()
+        f(worker)
         """
 
     @_register_handler
@@ -88,14 +88,14 @@ class AppEventsMixin(object):
     def before_response(self, f):
         """
         在 stream.write 之前，传入encode之后的data
-        f(response)
+        f(worker, response)
         """
 
     @_register_handler
     def after_response(self, f):
         """
         在 stream.write 之后，传入encode之后的data
-        f(response, result)
+        f(worker, response, result)
         """
 
 
@@ -124,7 +124,7 @@ class BlueprintEventsMixin(object):
     def create_app_worker(self, f):
         """
         创建worker
-        f()
+        f(worker)
         """
 
     @_register_handler
@@ -152,12 +152,12 @@ class BlueprintEventsMixin(object):
     def before_app_response(self, f):
         """
         在 stream.write 之前，传入encode之后的data
-        f(response)
+        f(worker, response)
         """
 
     @_register_handler
     def after_app_response(self, f):
         """
         在 stream.write 之后，传入encode之后的data
-        f(response, result)
+        f(worker, response, result)
         """

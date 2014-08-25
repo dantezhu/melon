@@ -18,9 +18,9 @@ class Worker(object):
     def run(self):
         self._handle_signals()
 
-        self.app.events.create_worker()
+        self.app.events.create_worker(self)
         for bp in self.app.blueprints:
-            bp.events.create_app_worker()
+            bp.events.create_app_worker(self)
 
         while 1:
             try:
@@ -59,9 +59,9 @@ class Worker(object):
         :return:
         """
 
-        self.app.events.before_response(msg)
+        self.app.events.before_response(self, msg)
         for bp in self.app.blueprints:
-            bp.events.before_app_response(msg)
+            bp.events.before_app_response(self, msg)
 
         try:
             self.child_output.put_nowait(msg)
@@ -71,8 +71,8 @@ class Worker(object):
             result = False
 
         for bp in self.app.blueprints:
-            bp.events.after_app_response(msg, result)
-        self.app.events.after_response(msg, result)
+            bp.events.after_app_response(self, msg, result)
+        self.app.events.after_response(self, msg, result)
 
         return result
 
