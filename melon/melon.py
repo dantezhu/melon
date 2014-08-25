@@ -20,6 +20,7 @@ from . import constants
 class Melon(RoutesMixin, AppEventsMixin):
 
     debug = False
+    got_first_request = False
     backlog = constants.SERVER_BACKLOG
 
     parent_input = None

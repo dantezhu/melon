@@ -64,6 +64,13 @@ class AppEventsMixin(object):
         """
 
     @_register_handler
+    def before_first_request(self, f):
+        """
+        第一个请求，请求解析为json成功后
+        f(request)
+        """
+
+    @_register_handler
     def before_request(self, f):
         """
         请求解析为json成功后
@@ -118,6 +125,13 @@ class BlueprintEventsMixin(object):
         """
         创建worker
         f()
+        """
+
+    @_register_handler
+    def before_app_first_request(self, f):
+        """
+        第一次请求，请求解析为json成功后
+        f(request)
         """
 
     @_register_handler
