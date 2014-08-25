@@ -11,13 +11,13 @@ import signal
 from .log import logger
 from .connection import ConnectionFactory
 from .worker import Worker
-from .callbacks_mixin import RoutesMixin
+from .mixins import RoutesMixin, AppEventsMixin
 from .request import Request
 from . import autoreload
 from . import constants
 
 
-class Melon(RoutesMixin):
+class Melon(RoutesMixin, AppEventsMixin):
 
     debug = False
     backlog = constants.SERVER_BACKLOG
@@ -31,7 +31,9 @@ class Melon(RoutesMixin):
 
     def __init__(self, box_class, connection_factory_class=None, request_class=None,
                  input_queue_maxsize=None, output_queue_maxsize=None):
-        super(Melon, self).__init__()
+        RoutesMixin.__init__(self)
+        AppEventsMixin.__init__(self)
+
         self.box_class = box_class
         self.connection_factory_class = connection_factory_class or ConnectionFactory
 
