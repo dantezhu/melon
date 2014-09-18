@@ -88,4 +88,4 @@ class Request(object):
         return self.write(None)
 
     def __repr__(self):
-        return repr(self.msg)
+        return 'client_address: %r, cmd: %r, msg: %r' % (self.address, self.cmd, repr(self.msg))
