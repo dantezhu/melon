@@ -45,7 +45,7 @@ class Melon(RoutesMixin, AppEventsMixin):
         self.request_class = request_class or Request
 
     def register_blueprint(self, blueprint):
-        blueprint.register2app(self)
+        blueprint.register_to_app(self)
 
     def run(self, host=None, port=None, debug=None, use_reloader=None, workers=1, handle_signals=None):
         if host is None:
