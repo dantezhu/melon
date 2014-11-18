@@ -8,9 +8,8 @@ from .log import logger
 
 class ConnectionFactory(Factory):
 
-    def __init__(self, app, box_class):
+    def __init__(self, app):
         self.app = app
-        self.box_class = box_class
 
     def buildProtocol(self, addr):
         return Connection(self, (addr.host, addr.port))
@@ -33,10 +32,9 @@ class Connection(Protocol):
         :return:
         """
         self._read_buffer += data
-        box = self.factory.box_class.instance()
 
         while self._read_buffer:
-            ret = box.check(self._read_buffer)
+            ret = self.factory.app.stream_checker(self._read_buffer)
             if ret == 0:
                 # 说明要继续收
                 return

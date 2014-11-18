@@ -43,6 +43,7 @@ class Melon(RoutesMixin, AppEventsMixin):
         self.parent_output = Queue(output_queue_maxsize)
         self.conn_dict = weakref.WeakValueDictionary()
         self.request_class = request_class or Request
+        self.stream_checker = self.box_class().check
 
     def register_blueprint(self, blueprint):
         blueprint.register_to_app(self)
@@ -68,7 +69,7 @@ class Melon(RoutesMixin, AppEventsMixin):
             if handle_signals:
                 self._handle_parent_proc_signals()
 
-            reactor.listenTCP(port, self.connection_factory_class(self, self.box_class),
+            reactor.listenTCP(port, self.connection_factory_class(self),
                               backlog=self.backlog, interface=host)
 
             try:
@@ -101,7 +102,7 @@ class Melon(RoutesMixin, AppEventsMixin):
 
     def _fork_workers(self, workers):
         def start_worker_process():
-            inner_p = Process(target=Worker(self, self.box_class, self.request_class).run)
+            inner_p = Process(target=Worker(self).run)
             inner_p.daemon = True
             inner_p.start()
             return inner_p

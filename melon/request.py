@@ -11,7 +11,6 @@ class Request(object):
     """
 
     worker = None
-    box_class = None
     msg = None
     box = None
     is_valid = False
@@ -19,15 +18,14 @@ class Request(object):
     blueprint_name = None
     blueprint_cmd = None
 
-    def __init__(self, worker, box_class, msg):
+    def __init__(self, worker, msg):
         self.worker = worker
-        self.box_class = box_class
         self.msg = msg
         self.is_valid = self._parse_raw_data()
 
     def _parse_raw_data(self):
         try:
-            self.box = self.box_class()
+            self.box = self.worker.app.box_class()
         except Exception, e:
             logger.error('create box fail. e: %s, request: %s', e, self)
             return False
@@ -73,7 +71,7 @@ class Request(object):
             # 生成box
             data = self.box.map(data)
 
-        if isinstance(data, self.box_class):
+        if isinstance(data, self.worker.app.box_class):
             data = data.pack()
 
         msg = dict(

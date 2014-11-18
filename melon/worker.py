@@ -10,10 +10,8 @@ class Worker(object):
     child_input = None
     child_output = None
 
-    def __init__(self, app, box_class, request_class):
+    def __init__(self, app):
         self.app = app
-        self.box_class = box_class
-        self.request_class = request_class
 
     def run(self):
         self._handle_signals()
@@ -32,7 +30,7 @@ class Worker(object):
                 break
 
             try:
-                request = self.request_class(self, self.box_class, msg)
+                request = self.app.request_class(self, msg)
                 self._handle_request(request)
             except:
                 logger.error('exc occur. msg: %r', msg, exc_info=True)
