@@ -30,6 +30,8 @@ class Melon(RoutesMixin, AppEventsMixin):
     server = None
     blueprints = None
 
+    worker = None
+
     def __init__(self, box_class, connection_factory_class=None, request_class=None,
                  input_queue_maxsize=None, output_queue_maxsize=None):
         RoutesMixin.__init__(self)
@@ -44,6 +46,7 @@ class Melon(RoutesMixin, AppEventsMixin):
         self.conn_dict = weakref.WeakValueDictionary()
         self.request_class = request_class or Request
         self.stream_checker = self.box_class().check
+        self.worker = Worker(self)
 
     def register_blueprint(self, blueprint):
         blueprint.register_to_app(self)
@@ -102,7 +105,7 @@ class Melon(RoutesMixin, AppEventsMixin):
 
     def _fork_workers(self, workers):
         def start_worker_process():
-            inner_p = Process(target=Worker(self).run)
+            inner_p = Process(target=self.worker.run)
             inner_p.daemon = True
             inner_p.start()
             return inner_p
