@@ -19,6 +19,12 @@ from . import constants
 
 class Melon(RoutesMixin, AppEventsMixin):
 
+    connection_factory_class = ConnectionFactory
+    request_class = Request
+
+    box_class = None
+    stream_checker = None
+
     debug = False
     got_first_request = False
     backlog = constants.SERVER_BACKLOG
@@ -32,20 +38,18 @@ class Melon(RoutesMixin, AppEventsMixin):
 
     worker = None
 
-    def __init__(self, box_class, connection_factory_class=None, request_class=None,
-                 input_queue_maxsize=None, output_queue_maxsize=None):
+    def __init__(self, box_class, input_queue_maxsize=None, output_queue_maxsize=None):
         RoutesMixin.__init__(self)
         AppEventsMixin.__init__(self)
 
         self.box_class = box_class
-        self.connection_factory_class = connection_factory_class or ConnectionFactory
+        self.stream_checker = self.box_class().check
 
         self.blueprints = list()
-        self.parent_input = Queue(input_queue_maxsize)
-        self.parent_output = Queue(output_queue_maxsize)
+        # 0 不代表无穷大，看代码是 SEM_VALUE_MAX = 32767L
+        self.parent_input = Queue(input_queue_maxsize or 0)
+        self.parent_output = Queue(output_queue_maxsize or 0)
         self.conn_dict = weakref.WeakValueDictionary()
-        self.request_class = request_class or Request
-        self.stream_checker = self.box_class().check
         self.worker = Worker(self)
 
     def register_blueprint(self, blueprint):
