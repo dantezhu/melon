@@ -55,7 +55,7 @@ class Melon(RoutesMixin, AppEventsMixin):
     def register_blueprint(self, blueprint):
         blueprint.register_to_app(self)
 
-    def run(self, host=None, port=None, debug=None, use_reloader=None, workers=1, handle_signals=None):
+    def run(self, host=None, port=None, debug=None, use_reloader=None, workers=None, handle_signals=None):
         if host is None:
             host = constants.SERVER_HOST
         if port is None:
@@ -63,11 +63,10 @@ class Melon(RoutesMixin, AppEventsMixin):
         if debug is not None:
             self.debug = debug
         use_reloader = use_reloader if use_reloader is not None else self.debug
+        workers = workers if workers is not None else 1
         handle_signals = handle_signals if handle_signals is not None else not use_reloader
 
         def run_wrapper():
-            assert workers >= 1
-
             logger.info('Running server on %s:%s, debug: %s, use_reloader: %s',
                         host, port, self.debug, use_reloader)
 
