@@ -82,11 +82,7 @@ class Worker(object):
         if not request.is_valid:
             return None
 
-        view_func = self.app.get_route_view_func(request.cmd)
-        if not view_func and request.blueprint:
-            view_func = request.blueprint.get_route_view_func(request.blueprint_cmd)
-
-        if not view_func:
+        if not request.view_func:
             logger.error('cmd invalid. request: %s' % request)
             request.write(dict(ret=constants.RET_INVALID_CMD))
             return None
@@ -108,10 +104,10 @@ class Worker(object):
         view_func_result = None
 
         try:
-            view_func_result = view_func(request)
+            view_func_result = request.view_func(request)
         except Exception, e:
-            logger.error('view_func raise exception. request: %s, view_func: %s, e: %s',
-                         request, view_func, e, exc_info=True)
+            logger.error('view_func raise exception. request: %s, e: %s',
+                         request, e, exc_info=True)
             view_func_exc = e
             request.write(dict(ret=constants.RET_INTERNAL))
 
