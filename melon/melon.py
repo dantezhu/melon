@@ -7,6 +7,7 @@ from threading import Thread
 # linux 默认就是epoll
 from twisted.internet import reactor
 import signal
+from collections import Counter
 
 from .log import logger
 from .connection import ConnectionFactory
@@ -56,6 +57,8 @@ class Melon(RoutesMixin, AppEventsMixin):
         blueprint.register_to_app(self)
 
     def run(self, host=None, port=None, debug=None, use_reloader=None, workers=None, handle_signals=None):
+        self._validate_cmds()
+
         if host is None:
             host = constants.SERVER_HOST
         if port is None:
@@ -89,6 +92,21 @@ class Melon(RoutesMixin, AppEventsMixin):
             autoreload.main(run_wrapper)
         else:
             run_wrapper()
+
+    def _validate_cmds(self):
+        """
+        确保 cmd 没有重复
+        :return:
+        """
+
+        cmd_list = list(self.rule_map.keys())
+
+        for bp in self.blueprints:
+            cmd_list.extend(bp.rule_map.keys())
+
+        duplicate_cmds = (Counter(cmd_list) - Counter(set(cmd_list))).keys()
+
+        assert not duplicate_cmds, 'duplicate cmds: %s' % duplicate_cmds
 
     def _spawn_poll_worker_result_thread(self):
         """
