@@ -80,12 +80,12 @@ class Worker(object):
         """
 
         if not request.is_valid:
-            return None
+            return False
 
         if not request.view_func:
             logger.error('cmd invalid. request: %s' % request)
             request.write(dict(ret=constants.RET_INVALID_CMD))
-            return None
+            return False
 
         if not self.app.got_first_request:
             self.app.got_first_request = True
@@ -101,10 +101,9 @@ class Worker(object):
             request.blueprint.events.before_request(request)
 
         view_func_exc = None
-        view_func_result = None
 
         try:
-            view_func_result = request.view_func(request)
+            request.view_func(request)
         except Exception, e:
             logger.error('view_func raise exception. request: %s, e: %s',
                          request, e, exc_info=True)
@@ -112,12 +111,12 @@ class Worker(object):
             request.write(dict(ret=constants.RET_INTERNAL))
 
         if request.blueprint:
-            request.blueprint.events.after_request(request, view_func_exc or view_func_result)
+            request.blueprint.events.after_request(request, view_func_exc)
         for bp in self.app.blueprints:
-            bp.events.after_app_request(request, view_func_exc or view_func_result)
-        self.app.events.after_request(request, view_func_exc or view_func_result)
+            bp.events.after_app_request(request, view_func_exc)
+        self.app.events.after_request(request, view_func_exc)
 
-        return view_func_result
+        return True
 
     def _handle_signals(self):
         """

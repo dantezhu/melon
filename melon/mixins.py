@@ -116,7 +116,7 @@ class BlueprintEventsMixin(object):
     def after_request(self, f):
         """
         执行完route对应的view_func后
-        f(request)
+        f(request, exc)
         """
 
     @_reg_event_handler
@@ -144,7 +144,7 @@ class BlueprintEventsMixin(object):
     def after_app_request(self, f):
         """
         执行完route对应的view_func后
-        f(request)
+        f(request, exc)
         """
 
     @_reg_event_handler

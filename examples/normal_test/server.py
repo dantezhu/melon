@@ -25,7 +25,7 @@ def before_request(request):
 
 @app.after_request
 def after_request(request, exc):
-    logger.error('after_request')
+    logger.error('after_request: %s', exc)
 
 
 @app.before_response
