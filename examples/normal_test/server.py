@@ -1,11 +1,21 @@
 # -*- coding: utf-8 -*-
 
+import sys
+sys.path.insert(0, '../../')
+
 import logging
 
 from reimp import Melon, logger, Box
 import user
 
-app = Melon(Box)
+app = Melon(Box, {
+    1: {
+        'count': 2,
+    },
+    10: {
+        'count': 2,
+    },
+}, lambda box: 1 if box.cmd == 1 else 10)
 
 
 @app.create_worker
@@ -40,9 +50,9 @@ def after_response(worker, rsp, result):
 
 @app.route(1)
 def index(request):
-    logger.error('request: %s', request)
+    logger.error('request: %s, worker: %s', request, request.worker)
     request.write(dict(ret=100))
 
 
 app.register_blueprint(user.bp)
-app.run('127.0.0.1', 7777, workers=2)
+app.run('127.0.0.1', 7777)

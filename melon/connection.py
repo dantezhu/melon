@@ -34,7 +34,9 @@ class Connection(Protocol):
         self._read_buffer += data
 
         while self._read_buffer:
-            ret = self.factory.app.stream_checker(self._read_buffer)
+            # 因为box后面还是要用的
+            box = self.factory.app.box_class()
+            ret = box.unpack(self._read_buffer)
             if ret == 0:
                 # 说明要继续收
                 return
@@ -42,7 +44,7 @@ class Connection(Protocol):
                 # 收好了
                 box_data = self._read_buffer[:ret]
                 self._read_buffer = self._read_buffer[ret:]
-                safe_call(self._on_read_complete, box_data)
+                safe_call(self._on_read_complete, box_data, box)
                 continue
             else:
                 # 数据已经混乱了，全部丢弃
@@ -50,11 +52,11 @@ class Connection(Protocol):
                 self._read_buffer = ''
                 return
 
-    def _on_read_complete(self, data):
+    def _on_read_complete(self, data, box):
         """
         完整数据接收完成
-        不需要解包成box，因为还要再发出去
-        :param data:
+        :param data: 原始数据
+        :param box: 解析之后的box
         :return:
         """
         msg = dict(
@@ -62,7 +64,11 @@ class Connection(Protocol):
             address=self.address,
             data=data,
         )
+
+        # 获取映射的group_id
+        group_id = self.factory.app.group_router(box)
+
         try:
-            self.factory.app.parent_output.put_nowait(msg)
+            self.factory.app.parent_output_dict[group_id].put_nowait(msg)
         except:
             logger.error('exc occur. msg: %r', msg, exc_info=True)

@@ -24,39 +24,55 @@ class Melon(RoutesMixin, AppEventsMixin):
     request_class = Request
 
     box_class = None
-    stream_checker = None
 
     debug = False
     got_first_request = False
     backlog = constants.SERVER_BACKLOG
 
-    parent_input = None
-    parent_output = None
+    group_conf = None
+    group_router = None
+
+    parent_input_dict = None
+    parent_output_dict = None
     conn_dict = None
 
     server = None
     blueprints = None
 
-    worker = None
-
-    def __init__(self, box_class, input_queue_maxsize=None, output_queue_maxsize=None):
+    def __init__(self, box_class, group_conf, group_router):
+        """
+        构造函数
+        :param box_class: box类
+        :param group_conf: 进程配置，格式如下:
+            {
+                $group_id: {
+                    count: 10,
+                    input_max_size: 1000,  # parent端的input
+                    output_max_size: 1000, # parent端的output
+                }
+            }
+        :param group_router: 通过box路由group_id:
+            def group_router(box):
+                return group_id
+        :return:
+        """
         RoutesMixin.__init__(self)
         AppEventsMixin.__init__(self)
 
         self.box_class = box_class
-        self.stream_checker = self.box_class().check
+        self.group_conf = group_conf
+        self.group_router = group_router
 
         self.blueprints = list()
         # 0 不代表无穷大，看代码是 SEM_VALUE_MAX = 32767L
-        self.parent_input = Queue(input_queue_maxsize or 0)
-        self.parent_output = Queue(output_queue_maxsize or 0)
+        self.parent_input_dict = dict()
+        self.parent_output_dict = dict()
         self.conn_dict = weakref.WeakValueDictionary()
-        self.worker = Worker(self)
 
     def register_blueprint(self, blueprint):
         blueprint.register_to_app(self)
 
-    def run(self, host=None, port=None, debug=None, use_reloader=None, workers=None, handle_signals=None):
+    def run(self, host=None, port=None, debug=None, use_reloader=None, handle_signals=None):
         self._validate_cmds()
 
         if host is None:
@@ -66,15 +82,15 @@ class Melon(RoutesMixin, AppEventsMixin):
         if debug is not None:
             self.debug = debug
         use_reloader = use_reloader if use_reloader is not None else self.debug
-        workers = workers if workers is not None else 1
         handle_signals = handle_signals if handle_signals is not None else not use_reloader
 
         def run_wrapper():
             logger.info('Running server on %s:%s, debug: %s, use_reloader: %s',
                         host, port, self.debug, use_reloader)
 
+            self._init_groups()
             self._spawn_poll_worker_result_thread()
-            self._spawn_fork_workers(workers)
+            self._spawn_fork_workers()
             if handle_signals:
                 self._handle_parent_proc_signals()
 
@@ -108,43 +124,65 @@ class Melon(RoutesMixin, AppEventsMixin):
 
         assert not duplicate_cmds, 'duplicate cmds: %s' % duplicate_cmds
 
+    def _init_groups(self):
+        """
+        初始化group数据
+        :return:
+        """
+        for group_id, conf in self.group_conf.items():
+            self.parent_input_dict[group_id] = Queue(conf.get('input_max_size', 0))
+            self.parent_output_dict[group_id] = Queue(conf.get('output_max_size', 0))
+
     def _spawn_poll_worker_result_thread(self):
         """
         启动获取worker数据的线程
         """
-        thread = Thread(target=self._poll_worker_result)
-        thread.daemon = True
-        thread.start()
+        for group_id in self.group_conf:
+            thread = Thread(target=self._poll_worker_result, args=(group_id,))
+            thread.daemon = True
+            thread.start()
 
-    def _spawn_fork_workers(self, workers):
+    def _spawn_fork_workers(self):
         """
         通过线程启动多个worker
         """
-        thread = Thread(target=self._fork_workers, args=(workers,))
+        thread = Thread(target=self._fork_workers, args=())
         thread.daemon = True
         thread.start()
 
-    def _fork_workers(self, workers):
-        def start_worker_process():
-            inner_p = Process(target=self.worker.run)
+    def _fork_workers(self):
+        def start_worker_process(target):
+            inner_p = Process(target=target)
             inner_p.daemon = True
             inner_p.start()
             return inner_p
 
         p_list = []
 
-        for it in xrange(0, workers):
-            p = start_worker_process()
-            p_list.append(p)
+        for group_id, conf in self.group_conf.items():
+
+            child_input = self.parent_output_dict[group_id]
+            child_output = self.parent_input_dict[group_id]
+            worker = Worker(self, group_id, child_input, child_output)
+
+            for it in xrange(0, conf.get('count', 1)):
+                p = start_worker_process(worker.run)
+                p_list.append(dict(
+                    p=p,
+                    worker=worker
+                ))
 
         while 1:
-            for idx, p in enumerate(p_list):
+            for info in p_list:
+                p = info['p']
+                worker = info['worker']
+
                 if not p.is_alive():
                     old_pid = p.pid
-                    p = start_worker_process()
-                    p_list[idx] = p
+                    p = start_worker_process(worker.run)
+                    info['p'] = p
 
-                    logger.error('process[%s] is dead. start new process[%s].', old_pid, p.pid)
+                    logger.error('process[%s] is dead. start new process[%s]. worker: %s', old_pid, p.pid, worker)
 
             try:
                 time.sleep(1)
@@ -154,13 +192,13 @@ class Melon(RoutesMixin, AppEventsMixin):
                 logger.error('exc occur.', exc_info=True)
                 break
 
-    def _poll_worker_result(self):
+    def _poll_worker_result(self, group_id):
         """
         从队列里面获取worker的返回
         """
         while 1:
             try:
-                msg = self.parent_input.get()
+                msg = self.parent_input_dict[group_id].get()
             except KeyboardInterrupt:
                 break
             except:
