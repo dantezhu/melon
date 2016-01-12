@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import sys
+sys.path.insert(0, '../../')
 
 from netkit.contrib.tcp_client import TcpClient
 from reimp import Box

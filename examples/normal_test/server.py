@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import sys
+sys.path.insert(0, '../../')
+
 import logging
 
 from reimp import Melon, logger, Box
@@ -49,4 +52,4 @@ def index(request):
 
 
 app.register_blueprint(user.bp)
-app.run('127.0.0.1', 7777, workers=2)
+app.run('127.0.0.1', 7777)

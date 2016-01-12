@@ -47,8 +47,8 @@ class Melon(RoutesMixin, AppEventsMixin):
             {
                 $group_id: {
                     count: 10,
-                    input_max_size: 1000,  # worker端的input
-                    output_max_size: 1000, # worker端的output
+                    input_max_size: 1000,  # parent端的input
+                    output_max_size: 1000, # parent端的output
                 }
             }
         :param group_router: 通过box路由group_id:
@@ -72,7 +72,7 @@ class Melon(RoutesMixin, AppEventsMixin):
     def register_blueprint(self, blueprint):
         blueprint.register_to_app(self)
 
-    def run(self, host=None, port=None, debug=None, use_reloader=None, workers=None, handle_signals=None):
+    def run(self, host=None, port=None, debug=None, use_reloader=None, handle_signals=None):
         self._validate_cmds()
 
         if host is None:
@@ -82,15 +82,15 @@ class Melon(RoutesMixin, AppEventsMixin):
         if debug is not None:
             self.debug = debug
         use_reloader = use_reloader if use_reloader is not None else self.debug
-        workers = workers if workers is not None else 1
         handle_signals = handle_signals if handle_signals is not None else not use_reloader
 
         def run_wrapper():
             logger.info('Running server on %s:%s, debug: %s, use_reloader: %s',
                         host, port, self.debug, use_reloader)
 
+            self._init_groups()
             self._spawn_poll_worker_result_thread()
-            self._spawn_fork_workers(workers)
+            self._spawn_fork_workers()
             if handle_signals:
                 self._handle_parent_proc_signals()
 
@@ -124,6 +124,15 @@ class Melon(RoutesMixin, AppEventsMixin):
 
         assert not duplicate_cmds, 'duplicate cmds: %s' % duplicate_cmds
 
+    def _init_groups(self):
+        """
+        初始化group数据
+        :return:
+        """
+        for group_id, conf in self.group_conf.items():
+            self.parent_input_dict[group_id] = Queue(conf.get('input_max_size', 0))
+            self.parent_output_dict[group_id] = Queue(conf.get('output_max_size', 0))
+
     def _spawn_poll_worker_result_thread(self):
         """
         启动获取worker数据的线程
@@ -133,15 +142,15 @@ class Melon(RoutesMixin, AppEventsMixin):
             thread.daemon = True
             thread.start()
 
-    def _spawn_fork_workers(self, workers):
+    def _spawn_fork_workers(self):
         """
         通过线程启动多个worker
         """
-        thread = Thread(target=self._fork_workers, args=(workers,))
+        thread = Thread(target=self._fork_workers, args=())
         thread.daemon = True
         thread.start()
 
-    def _fork_workers(self, workers):
+    def _fork_workers(self):
         def start_worker_process(target):
             inner_p = Process(target=target)
             inner_p.daemon = True
@@ -152,17 +161,8 @@ class Melon(RoutesMixin, AppEventsMixin):
 
         for group_id, conf in self.group_conf.items():
 
-            child_input_dict = self.parent_output_dict
-            child_output_dict = self.parent_input_dict
-
-            child_input = child_input_dict.get(group_id)
-            if child_input is None:
-                child_input_dict[group_id] = child_input = Queue(conf.get('input_max_size', 0))
-
-            child_output = child_output_dict.get(group_id)
-            if child_output is None:
-                child_output_dict[group_id] = child_output = Queue(conf.get('output_max_size', 0))
-
+            child_input = self.parent_output_dict[group_id]
+            child_output = self.parent_input_dict[group_id]
             worker = Worker(self, group_id, child_input, child_output)
 
             for it in xrange(0, conf.get('count', 1)):
