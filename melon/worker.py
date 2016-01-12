@@ -7,11 +7,23 @@ from .log import logger
 
 class Worker(object):
 
+    group_id = None
     child_input = None
     child_output = None
 
-    def __init__(self, app):
+    def __init__(self, app, group_id, child_input, child_output):
+        """
+
+        :param app: melon app
+        :param group_id: group_id
+        :param child_input: 读取数据
+        :param child_output: 写入数据
+        :return:
+        """
         self.app = app
+        self.group_id = group_id
+        self.child_input = child_input
+        self.child_output = child_output
 
     def run(self):
         self._handle_signals()
@@ -34,14 +46,6 @@ class Worker(object):
                 self._handle_request(request)
             except:
                 logger.error('exc occur. msg: %r', msg, exc_info=True)
-
-    @property
-    def child_input(self):
-        return self.app.parent_output
-
-    @property
-    def child_output(self):
-        return self.app.parent_input
 
     def read(self):
         """
@@ -125,3 +129,6 @@ class Worker(object):
         """
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
         signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+    def __repr__(self):
+        return 'worker. group_id: %s' % self.group_id
