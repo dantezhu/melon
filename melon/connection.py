@@ -55,7 +55,6 @@ class Connection(Protocol):
     def _on_read_complete(self, data, box):
         """
         完整数据接收完成
-        不需要解包成box，因为还要再发出去
         :param data: 原始数据
         :param box: 解析之后的box
         :return:
