@@ -24,7 +24,6 @@ class Melon(RoutesMixin, AppEventsMixin):
     request_class = Request
 
     box_class = None
-    stream_checker = None
 
     debug = False
     got_first_request = False
@@ -61,7 +60,6 @@ class Melon(RoutesMixin, AppEventsMixin):
         AppEventsMixin.__init__(self)
 
         self.box_class = box_class
-        self.stream_checker = self.box_class().check
         self.group_conf = group_conf
         self.group_router = group_router
 
