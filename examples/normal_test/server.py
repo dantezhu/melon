@@ -11,8 +11,11 @@ import user
 app = Melon(Box, {
     1: {
         'count': 2,
-    }
-}, lambda box: 1)
+    },
+    10: {
+        'count': 2,
+    },
+}, lambda box: 1 if box.cmd == 1 else 10)
 
 
 @app.create_worker
@@ -47,7 +50,7 @@ def after_response(worker, rsp, result):
 
 @app.route(1)
 def index(request):
-    logger.error('request: %s', request)
+    logger.error('request: %s, worker: %s', request, request.worker)
     request.write(dict(ret=100))
 
 
