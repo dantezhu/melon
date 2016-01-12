@@ -5,7 +5,11 @@ import logging
 from reimp import Melon, logger, Box
 import user
 
-app = Melon(Box)
+app = Melon(Box, {
+    1: {
+        'count': 2,
+    }
+}, lambda box: 1)
 
 
 @app.create_worker

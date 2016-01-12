@@ -157,15 +157,15 @@ class Melon(RoutesMixin, AppEventsMixin):
 
             child_input = child_input_dict.get(group_id)
             if child_input is None:
-                child_input_dict[group_id] = child_input = Queue(conf['input_max_size'])
+                child_input_dict[group_id] = child_input = Queue(conf.get('input_max_size', 0))
 
             child_output = child_output_dict.get(group_id)
             if child_output is None:
-                child_output_dict[group_id] = child_output = Queue(conf['output_max_size'])
+                child_output_dict[group_id] = child_output = Queue(conf.get('output_max_size', 0))
 
             worker = Worker(self, group_id, child_input, child_output)
 
-            for it in xrange(0, conf['count']):
+            for it in xrange(0, conf.get('count', 1)):
                 p = start_worker_process(worker.run)
                 p_list.append(dict(
                     p=p,
