@@ -14,7 +14,6 @@ from .connection import ConnectionFactory
 from .worker import Worker
 from .mixins import RoutesMixin, AppEventsMixin
 from .request import Request
-from . import autoreload
 from . import constants
 
 
@@ -72,7 +71,7 @@ class Melon(RoutesMixin, AppEventsMixin):
     def register_blueprint(self, blueprint):
         blueprint.register_to_app(self)
 
-    def run(self, host=None, port=None, debug=None, use_reloader=None, handle_signals=None):
+    def run(self, host=None, port=None, debug=None, handle_signals=None):
         self._validate_cmds()
 
         if host is None:
@@ -81,12 +80,11 @@ class Melon(RoutesMixin, AppEventsMixin):
             port = constants.SERVER_PORT
         if debug is not None:
             self.debug = debug
-        use_reloader = use_reloader if use_reloader is not None else self.debug
-        handle_signals = handle_signals if handle_signals is not None else not use_reloader
+        handle_signals = handle_signals if handle_signals is not None else True
 
         def run_wrapper():
-            logger.info('Running server on %s:%s, debug: %s, use_reloader: %s',
-                        host, port, self.debug, use_reloader)
+            logger.info('Running server on %s:%s, debug: %s',
+                        host, port, self.debug)
 
             self._init_groups()
             self._spawn_poll_worker_result_thread()
@@ -104,10 +102,7 @@ class Melon(RoutesMixin, AppEventsMixin):
             except:
                 logger.error('exc occur.', exc_info=True)
 
-        if use_reloader:
-            autoreload.main(run_wrapper)
-        else:
-            run_wrapper()
+        run_wrapper()
 
     def _validate_cmds(self):
         """
