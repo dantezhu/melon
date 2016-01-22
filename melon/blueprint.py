@@ -20,6 +20,3 @@ class Blueprint(RoutesMixin, BlueprintEventsMixin):
         self.app = app
         # 注册上
         self.app.blueprints.append(self)
-
-    def repeat_app_timer(self, interval):
-        raise NotImplementedError
