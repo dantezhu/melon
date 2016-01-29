@@ -17,7 +17,7 @@ from . import constants
 
 class Melon(RoutesMixin, AppEventsMixin):
 
-    conn_id_max = 9223372036854775807
+    conn_id_max = 2 ** 63 - 1
     conn_id_counter = 0
 
     client_connection_factory_class = ClientConnectionFactory
