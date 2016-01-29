@@ -4,7 +4,7 @@ from twisted.internet.protocol import Protocol, Factory
 
 from melon.utils import safe_call
 from melon.log import logger
-from melon.worker_box import WorkerBox
+from melon.proxy.worker_box import WorkerBox
 
 
 class ClientConnectionFactory(Factory):

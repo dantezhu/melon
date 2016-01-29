@@ -101,7 +101,8 @@ class Melon(RoutesMixin, AppEventsMixin):
         if debug is not None:
             self.debug = debug
 
-        if os.getenv(constants.WORKER_ENV_KEY) != 'true':
+        # 只要没有这个环境变量，就是主进程
+        if not os.getenv(constants.WORKER_GROUP_ENV_KEY):
             # 主进程
             logger.info('Running server on %s:%s, debug: %s',
                         host, port, self.debug)
@@ -160,30 +161,33 @@ class Melon(RoutesMixin, AppEventsMixin):
         except:
             logger.error('exc occur.', exc_info=True)
 
-    def _fork_workers(self, workers):
-        worker_env = copy.deepcopy(os.environ)
-        worker_env.update({
-            constants.WORKER_ENV_KEY: 'true'
-        })
-
-        def start_worker_process():
+    def _fork_workers(self):
+        def start_worker_process(group_id):
+            # 要传入group_id
+            worker_env = copy.deepcopy(os.environ)
+            worker_env.update({
+                constants.WORKER_GROUP_ENV_KEY: str(group_id)
+            })
             args = [sys.executable] + sys.argv
             inner_p = subprocess.Popen(args, env=worker_env)
+            inner_p.group_id = group_id
             return inner_p
 
-        for it in xrange(0, workers):
-            p = start_worker_process()
+        for group_id, group_info in self.group_conf.items():
+            p = start_worker_process(group_id)
             self.processes.append(p)
 
         while 1:
             for idx, p in enumerate(self.processes):
                 if p and p.poll() is not None:
+                    group_id = p.group_id
+
                     # 说明退出了
                     self.processes[idx] = None
 
                     if self.enable:
                         # 如果还要继续服务
-                        p = start_worker_process()
+                        p = start_worker_process(group_id)
                         self.processes[idx] = p
 
             if not filter(lambda x: x, self.processes):
