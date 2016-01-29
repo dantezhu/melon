@@ -10,10 +10,9 @@ import signal
 from collections import Counter
 
 from .log import logger
-from melon.proxy.client_connection import ClientConnectionFactory
+from .proxy import ClientConnectionFactory, WorkerConnectionFactory, Request
 from .worker.worker import Worker
 from .mixins import RoutesMixin, AppEventsMixin
-from melon.proxy.request import Request
 from . import constants
 
 
@@ -23,6 +22,7 @@ class Melon(RoutesMixin, AppEventsMixin):
     conn_id_counter = 0
 
     client_connection_factory_class = ClientConnectionFactory
+    worker_connection_factory_class = WorkerConnectionFactory
     request_class = Request
 
     box_class = None
@@ -49,8 +49,6 @@ class Melon(RoutesMixin, AppEventsMixin):
             {
                 $group_id: {
                     count: 10,
-                    input_max_size: 1000,  # parent端的input
-                    output_max_size: 1000, # parent端的output
                 }
             }
         :param group_router: 通过box路由group_id:
@@ -66,9 +64,6 @@ class Melon(RoutesMixin, AppEventsMixin):
         self.group_router = group_router
 
         self.blueprints = list()
-        # 0 不代表无穷大，看代码是 SEM_VALUE_MAX = 32767L
-        self.parent_input_dict = dict()
-        self.parent_output_dict = dict()
         self.conn_dict = weakref.WeakValueDictionary()
 
     def register_blueprint(self, blueprint):
@@ -103,14 +98,16 @@ class Melon(RoutesMixin, AppEventsMixin):
             logger.info('Running server on %s:%s, debug: %s',
                         host, port, self.debug)
 
-            self._init_groups()
-            self._spawn_poll_worker_result_thread()
-            self._spawn_fork_workers()
-            if handle_signals:
-                self._handle_parent_proc_signals()
-
             reactor.listenTCP(port, self.client_connection_factory_class(self),
                               backlog=self.backlog, interface=host)
+
+            # 启动监听worker
+
+            for group_id in self.group_conf:
+                address = "worker_%s.sock"
+
+                # 给内部worker通信用的
+                reactor.listenUnix(address, self.worker_connection_factory_class(self, group_id))
 
             try:
                 reactor.run(installSignalHandlers=False)
@@ -136,113 +133,3 @@ class Melon(RoutesMixin, AppEventsMixin):
 
         assert not duplicate_cmds, 'duplicate cmds: %s' % duplicate_cmds
 
-    def _init_groups(self):
-        """
-        初始化group数据
-        :return:
-        """
-        for group_id, conf in self.group_conf.items():
-            self.parent_input_dict[group_id] = Queue(conf.get('input_max_size', 0))
-            self.parent_output_dict[group_id] = Queue(conf.get('output_max_size', 0))
-
-    def _spawn_poll_worker_result_thread(self):
-        """
-        启动获取worker数据的线程
-        """
-        for group_id in self.group_conf:
-            thread = Thread(target=self._poll_worker_result, args=(group_id,))
-            thread.daemon = True
-            thread.start()
-
-    def _spawn_fork_workers(self):
-        """
-        通过线程启动多个worker
-        """
-        thread = Thread(target=self._fork_workers, args=())
-        thread.daemon = True
-        thread.start()
-
-    def _fork_workers(self):
-        def start_worker_process(target):
-            inner_p = Process(target=target)
-            inner_p.daemon = True
-            inner_p.start()
-            return inner_p
-
-        p_list = []
-
-        for group_id, conf in self.group_conf.items():
-
-            child_input = self.parent_output_dict[group_id]
-            child_output = self.parent_input_dict[group_id]
-            worker = Worker(self, group_id, child_input, child_output)
-
-            for it in xrange(0, conf.get('count', 1)):
-                p = start_worker_process(worker.run)
-                p_list.append(dict(
-                    p=p,
-                    worker=worker
-                ))
-
-        while 1:
-            for info in p_list:
-                p = info['p']
-                worker = info['worker']
-
-                if not p.is_alive():
-                    old_pid = p.pid
-                    p = start_worker_process(worker.run)
-                    info['p'] = p
-
-                    logger.error('process[%s] is dead. start new process[%s]. worker: %s', old_pid, p.pid, worker)
-
-            try:
-                time.sleep(1)
-            except KeyboardInterrupt:
-                break
-            except:
-                logger.error('exc occur.', exc_info=True)
-                break
-
-    def _poll_worker_result(self, group_id):
-        """
-        从队列里面获取worker的返回
-        """
-        while 1:
-            try:
-                msg = self.parent_input_dict[group_id].get()
-            except KeyboardInterrupt:
-                break
-            except:
-                logger.error('exc occur.', exc_info=True)
-                break
-
-            # 参考 http://twistedsphinx.funsize.net/projects/core/howto/threading.html
-            reactor.callFromThread(self._handle_worker_response, msg)
-
-    def _handle_worker_response(self, msg):
-        conn = self.conn_dict.get(msg.get('conn_id'))
-        data = msg.get('data')
-
-        if conn and conn.transport:
-            try:
-                if data:
-                    conn.transport.write(data)
-                else:
-                    # data 为NULL代表关闭链接的意思
-                    conn.transport.loseConnection()
-            except:
-                logger.error('exc occur. msg: %r', msg, exc_info=True)
-
-    def _handle_parent_proc_signals(self):
-        def custom_signal_handler(signum, frame):
-            """
-            在centos6下，callFromThread(stop)无效，因为处理不够及时
-            """
-            try:
-                reactor.stop()
-            except:
-                pass
-
-        signal.signal(signal.SIGTERM, custom_signal_handler)
-        signal.signal(signal.SIGINT, custom_signal_handler)
