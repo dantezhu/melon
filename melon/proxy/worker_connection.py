@@ -30,8 +30,6 @@ class WorkerConnection(Protocol):
         self.address = address
         self.group_id = group_id
         self._read_buffer = ''
-        # 放到弱引用映射里去
-        self.factory.app.conn_dict[id(self)] = self
 
     def connectionMade(self):
         pass

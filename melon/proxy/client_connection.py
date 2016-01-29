@@ -4,6 +4,7 @@ from twisted.internet.protocol import Protocol, Factory
 
 from melon.utils import safe_call
 from melon.log import logger
+from melon.worker_box import WorkerBox
 
 
 class ClientConnectionFactory(Factory):
@@ -22,8 +23,10 @@ class ClientConnection(Protocol):
         self.factory = factory
         self.address = address
         self._read_buffer = ''
+
         # 放到弱引用映射里去
-        self.factory.app.conn_dict[id(self)] = self
+        self.conn_id = self.factory.app.alloc_conn_id()
+        self.factory.app.conn_dict[self.conn_id] = self
 
     def dataReceived(self, data):
         """
@@ -59,16 +62,10 @@ class ClientConnection(Protocol):
         :param box: 解析之后的box
         :return:
         """
-        msg = dict(
-            conn_id=id(self),
-            address=self.address,
-            data=data,
-        )
+        worker_box = WorkerBox(init_data=dict(
+            body=data
+        ))
 
         # 获取映射的group_id
         group_id = self.factory.app.group_router(box)
 
-        try:
-            self.factory.app.parent_output_dict[group_id].put_nowait(msg)
-        except:
-            logger.error('exc occur. msg: %r', msg, exc_info=True)

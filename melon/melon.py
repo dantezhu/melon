@@ -11,13 +11,16 @@ from collections import Counter
 
 from .log import logger
 from melon.proxy.client_connection import ClientConnectionFactory
-from .worker import Worker
+from .worker.worker import Worker
 from .mixins import RoutesMixin, AppEventsMixin
 from melon.proxy.request import Request
 from . import constants
 
 
 class Melon(RoutesMixin, AppEventsMixin):
+
+    conn_id_max = 9223372036854775807
+    conn_id_counter = 0
 
     client_connection_factory_class = ClientConnectionFactory
     request_class = Request
@@ -70,6 +73,20 @@ class Melon(RoutesMixin, AppEventsMixin):
 
     def register_blueprint(self, blueprint):
         blueprint.register_to_app(self)
+
+    def alloc_conn_id(self):
+        """
+        获取自增的连接ID
+        :return:
+        """
+
+        # 使用longlong型
+        if self.conn_id_counter >= self.conn_id_max:
+            self.conn_id_counter = 0
+
+        self.conn_id_counter += 1
+
+        return self.conn_id_counter
 
     def run(self, host=None, port=None, debug=None, handle_signals=None):
         self._validate_cmds()
