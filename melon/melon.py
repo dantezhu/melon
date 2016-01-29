@@ -10,16 +10,16 @@ import signal
 from collections import Counter
 
 from .log import logger
-from .connection import ConnectionFactory
+from melon.proxy.client_connection import ClientConnectionFactory
 from .worker import Worker
 from .mixins import RoutesMixin, AppEventsMixin
-from .request import Request
+from melon.proxy.request import Request
 from . import constants
 
 
 class Melon(RoutesMixin, AppEventsMixin):
 
-    connection_factory_class = ConnectionFactory
+    client_connection_factory_class = ClientConnectionFactory
     request_class = Request
 
     box_class = None
@@ -92,7 +92,7 @@ class Melon(RoutesMixin, AppEventsMixin):
             if handle_signals:
                 self._handle_parent_proc_signals()
 
-            reactor.listenTCP(port, self.connection_factory_class(self),
+            reactor.listenTCP(port, self.client_connection_factory_class(self),
                               backlog=self.backlog, interface=host)
 
             try:

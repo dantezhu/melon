@@ -2,7 +2,7 @@
 
 import os
 import numbers
-from .log import logger
+from melon.log import logger
 
 
 class Request(object):

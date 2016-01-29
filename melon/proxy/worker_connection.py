@@ -1,29 +1,43 @@
 # -*- coding: utf-8 -*-
 
-from twisted.internet.protocol import Protocol, Factory
+from twisted.internet.protocol import Protocol, Factory, connectionDone
 
-from .utils import safe_call
-from .log import logger
+from melon.utils import safe_call
+from melon.log import logger
 
 
-class ConnectionFactory(Factory):
+class WorkerConnectionFactory(Factory):
 
-    def __init__(self, app):
+    def __init__(self, app, group_id):
         self.app = app
+        self.group_id = group_id
 
     def buildProtocol(self, addr):
-        return Connection(self, (addr.host, addr.port))
+        return WorkerConnection(self, (addr.host, addr.port), self.group_id)
 
 
-class Connection(Protocol):
+class WorkerConnection(Protocol):
     _read_buffer = None
 
-    def __init__(self, factory, address):
+    def __init__(self, factory, address, group_id):
+        """
+        :param factory: 工厂类
+        :param address: 地址
+        :param group_id: 所属的组
+        :return:
+        """
         self.factory = factory
         self.address = address
+        self.group_id = group_id
         self._read_buffer = ''
         # 放到弱引用映射里去
         self.factory.app.conn_dict[id(self)] = self
+
+    def connectionMade(self):
+        pass
+
+    def connectionLost(self, reason=connectionDone):
+        pass
 
     def dataReceived(self, data):
         """

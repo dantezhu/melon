@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import signal
-from . import constants
-from .log import logger
+from melon import constants
+from melon.log import logger
 
 
 class Worker(object):
