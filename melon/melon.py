@@ -34,11 +34,8 @@ class Melon(RoutesMixin, AppEventsMixin):
     group_conf = None
     group_router = None
 
-    parent_input_dict = None
-    parent_output_dict = None
     conn_dict = None
 
-    server = None
     blueprints = None
 
     def __init__(self, box_class, group_conf, group_router):
