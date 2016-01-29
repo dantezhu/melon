@@ -6,10 +6,11 @@ import weakref
 import sys
 import subprocess
 import time
-# linux 默认就是epoll
-from twisted.internet import reactor
 import signal
 from collections import Counter
+import Queue
+# linux 默认就是epoll
+from twisted.internet import reactor
 
 from .log import logger
 from .proxy import ClientConnectionFactory, WorkerConnectionFactory, Request
@@ -49,6 +50,7 @@ class Melon(RoutesMixin, AppEventsMixin):
 
     # 子进程列表
     processes = None
+    msg_queue_dict = None
 
     def __init__(self, box_class, group_conf, group_router):
         """
@@ -73,6 +75,7 @@ class Melon(RoutesMixin, AppEventsMixin):
         self.group_router = group_router
 
         self.blueprints = list()
+        self.msg_queue_dict = dict()
         self.conn_dict = weakref.WeakValueDictionary()
 
     def register_blueprint(self, blueprint):
@@ -112,8 +115,8 @@ class Melon(RoutesMixin, AppEventsMixin):
                               backlog=self.backlog, interface=host)
 
             # 启动监听worker
-
             for group_id in self.group_conf:
+                self.msg_queue_dict[group_id] = Queue.Queue()
                 address = "worker_%s.sock"
 
                 # 给内部worker通信用的
