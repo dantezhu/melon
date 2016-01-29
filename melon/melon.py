@@ -13,8 +13,8 @@ import Queue
 from twisted.internet import reactor
 
 from .log import logger
-from .proxy import ClientConnectionFactory, WorkerConnectionFactory, Request
-from .worker import RoutesMixin, AppEventsMixin
+from .proxy import ClientConnectionFactory, WorkerConnectionFactory
+from .worker import RoutesMixin, AppEventsMixin, Request
 from . import constants
 
 
