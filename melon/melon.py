@@ -13,7 +13,7 @@ from collections import Counter
 
 from .log import logger
 from .proxy import ClientConnectionFactory, WorkerConnectionFactory, Request
-from .mixins import RoutesMixin, AppEventsMixin
+from .worker import RoutesMixin, AppEventsMixin
 from . import constants
 
 
