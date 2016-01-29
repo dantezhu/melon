@@ -7,6 +7,13 @@ RET_INVALID_CMD = -10000
 RET_INTERNAL = -10001
 
 # 默认host和port
-SERVER_HOST = '127.0.0.1'
-SERVER_PORT = 7777
 SERVER_BACKLOG = 256
+
+# 重连等待时间
+TRY_CONNECT_INTERVAL = 1
+
+# worker的env
+WORKER_ENV_KEY = 'MELON_WORKER'
+
+# 网络连接超时(秒)，包括 connect once，read once，write once
+CONN_TIMEOUT = 3
