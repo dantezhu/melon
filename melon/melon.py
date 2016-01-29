@@ -11,7 +11,6 @@ from collections import Counter
 
 from .log import logger
 from .proxy import ClientConnectionFactory, WorkerConnectionFactory, Request
-from .worker.worker import Worker
 from .mixins import RoutesMixin, AppEventsMixin
 from . import constants
 
