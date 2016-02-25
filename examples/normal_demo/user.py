@@ -34,6 +34,8 @@ def after_app_request(request, exc):
 @bp.before_request
 def before_request(request):
     logger.error('bp.before_request')
+    request.interrupt(dict(ret=-100))
+    # request.interrupt()
 
 
 @bp.after_request

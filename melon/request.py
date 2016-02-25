@@ -16,6 +16,8 @@ class Request(object):
     is_valid = False
     blueprint = None
     route_rule = None
+    # 是否中断处理，即不调用view_func，主要用在before_request中
+    interrupted = False
 
     def __init__(self, worker, msg):
         self.worker = worker
@@ -99,6 +101,18 @@ class Request(object):
 
     def close(self, exc_info=False):
         return self.write(None)
+
+    def interrupt(self, data=None):
+        """
+        中断处理
+        :param data: 要响应的数据，不传即不响应
+        :return:
+        """
+        self.interrupted = True
+        if data is not None:
+            return self.write(data)
+        else:
+            return True
 
     def __repr__(self):
         return 'client_address: %r, cmd: %r, endpoint: %s, msg: %r' % (
