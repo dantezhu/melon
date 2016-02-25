@@ -27,7 +27,7 @@ class Worker(object):
         self.child_output = child_output
 
     def run(self):
-        setproctitle.setproctitle(self.app.make_proc_name('master'))
+        setproctitle.setproctitle(self.app.make_proc_name('worker'))
         self._handle_signals()
 
         self.app.events.create_worker(self)
