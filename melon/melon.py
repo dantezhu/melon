@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import time
 from multiprocessing import Queue, Process
 import weakref
@@ -8,6 +9,7 @@ from threading import Thread
 from twisted.internet import reactor
 import signal
 from collections import Counter
+import setproctitle
 
 from .log import logger
 from .connection import ConnectionFactory
@@ -18,6 +20,8 @@ from . import constants
 
 
 class Melon(RoutesMixin, AppEventsMixin):
+
+    name = constants.NAME
 
     connection_factory_class = ConnectionFactory
     request_class = Request
@@ -71,7 +75,7 @@ class Melon(RoutesMixin, AppEventsMixin):
     def register_blueprint(self, blueprint):
         blueprint.register_to_app(self)
 
-    def run(self, host=None, port=None, debug=None, handle_signals=None):
+    def run(self, host=None, port=None, debug=None):
         self._validate_cmds()
 
         if host is None:
@@ -80,17 +84,16 @@ class Melon(RoutesMixin, AppEventsMixin):
             port = constants.SERVER_PORT
         if debug is not None:
             self.debug = debug
-        handle_signals = handle_signals if handle_signals is not None else True
 
         def run_wrapper():
             logger.info('Running server on %s:%s, debug: %s',
                         host, port, self.debug)
 
+            setproctitle.setproctitle(self.make_proc_name('master'))
             self._init_groups()
             self._spawn_poll_worker_result_thread()
             self._spawn_fork_workers()
-            if handle_signals:
-                self._handle_parent_proc_signals()
+            self._handle_parent_proc_signals()
 
             reactor.listenTCP(port, self.connection_factory_class(self),
                               backlog=self.backlog, interface=host)
@@ -103,6 +106,19 @@ class Melon(RoutesMixin, AppEventsMixin):
                 logger.error('exc occur.', exc_info=True)
 
         run_wrapper()
+
+    def make_proc_name(self, subtitle):
+        """
+        获取进程名称
+        :param subtitle:
+        :return:
+        """
+        proc_name = '[%s %s:%s] %s' % (
+            self.name,
+            constants.NAME,
+            subtitle,
+            ' '.join([sys.executable] + sys.argv)
+        )
 
     def _validate_cmds(self):
         """

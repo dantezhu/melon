@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import signal
+import setproctitle
 from . import constants
 from .log import logger
 
@@ -26,6 +27,7 @@ class Worker(object):
         self.child_output = child_output
 
     def run(self):
+        setproctitle.setproctitle(self.app.make_proc_name('master'))
         self._handle_signals()
 
         self.app.events.create_worker(self)

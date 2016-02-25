@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-LOGGER_NAME = 'melon'
+NAME = 'melon'
 
 # 系统返回码
 RET_INVALID_CMD = -10000
