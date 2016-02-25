@@ -120,6 +120,8 @@ class Melon(RoutesMixin, AppEventsMixin):
             ' '.join([sys.executable] + sys.argv)
         )
 
+        return proc_name
+
     def _validate_cmds(self):
         """
         确保 cmd 没有重复
