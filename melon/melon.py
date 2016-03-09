@@ -21,19 +21,22 @@ from . import constants
 
 class Melon(RoutesMixin, AppEventsMixin):
 
+    ############################## configurable begin ##############################
     name = constants.NAME
+
+    box_class = None
+    backlog = constants.SERVER_BACKLOG
+
+    debug = False
+
+    group_conf = None
+    group_router = None
+    ############################## configurable end   ##############################
 
     connection_factory_class = ConnectionFactory
     request_class = Request
 
-    box_class = None
-
-    debug = False
     got_first_request = False
-    backlog = constants.SERVER_BACKLOG
-
-    group_conf = None
-    group_router = None
 
     parent_input_dict = None
     parent_output_dict = None
